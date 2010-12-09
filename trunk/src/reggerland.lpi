@@ -1,0 +1,300 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <General>
+      <Flags>
+        <LRSInOutputDirectory Value="False"/>
+      </Flags>
+      <MainUnit Value="0"/>
+      <ActiveWindowIndexAtStart Value="0"/>
+    </General>
+    <VersionInfo>
+      <Language Value=""/>
+      <CharSet Value=""/>
+      <StringTable ProductVersion=""/>
+    </VersionInfo>
+    <PublishOptions>
+      <Version Value="2"/>
+      <IgnoreBinaries Value="False"/>
+      <IncludeFileFilter Value="*.(pas|pp|inc|lfm|lpr|lrs|lpi|lpk|sh|xml)"/>
+      <ExcludeFileFilter Value="*.(bak|ppu|ppw|o|so);*~;backup"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+        <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
+      </local>
+    </RunParams>
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="LCL"/>
+      </Item1>
+    </RequiredPackages>
+    <Units Count="11">
+      <Unit0>
+        <Filename Value="Egger.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="3"/>
+        <UsageCount Value="41"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="EggerGame.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EggerGame"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="648"/>
+        <CursorPos X="11" Y="572"/>
+        <UsageCount Value="41"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="EggerSprite.pas"/>
+        <UnitName Value="EggerSprite"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="936"/>
+        <CursorPos X="44" Y="952"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\..\lib\JEDI-SDLv1.0\SDLSpriteEngine\Pas\sdlsprites.pas"/>
+        <UnitName Value="sdlsprites"/>
+        <TopLine Value="16"/>
+        <CursorPos X="2" Y="37"/>
+        <UsageCount Value="8"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="D:\Lazarus\fpc\2.4.3\source\packages\fcl-base\src\inifiles.pp"/>
+        <UnitName Value="IniFiles"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="16"/>
+        <UsageCount Value="8"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="..\..\Lib\JEDI-SDLv1.0\SDL\Pas\logger.pas"/>
+        <UnitName Value="logger"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="77"/>
+        <CursorPos X="4" Y="80"/>
+        <UsageCount Value="8"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="D:\Lazarus\fpc\2.4.3\source\rtl\win\sysutils.pp"/>
+        <UnitName Value="sysutils"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="24"/>
+        <CursorPos X="1" Y="31"/>
+        <UsageCount Value="8"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="D:\Lazarus\lcl\lclintf.pas"/>
+        <UnitName Value="LCLIntf"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="8"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="EggerData.pas"/>
+        <UnitName Value="EggerData"/>
+        <EditorIndex Value="2"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="30"/>
+        <CursorPos X="14" Y="54"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="..\..\..\..\..\t305633\Lazarus.0.9.29\fpc\2.4.3\source\packages\sdl\src\sdl.pas"/>
+        <UnitName Value="sdl"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="8"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="..\..\..\Lib\JEDI-SDLv1.0\SDLSpriteEngine\Pas\sdlsprites.pas"/>
+        <UnitName Value="sdlsprites"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="21"/>
+        <CursorPos X="14" Y="27"/>
+        <UsageCount Value="8"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit10>
+    </Units>
+    <JumpHistory Count="30" HistoryIndex="28">
+      <Position1>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="565" Column="21" TopLine="549"/>
+      </Position1>
+      <Position2>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position2>
+      <Position3>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="190" Column="14" TopLine="173"/>
+      </Position3>
+      <Position4>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position4>
+      <Position5>
+        <Filename Value="EggerGame.pas"/>
+        <Caret Line="695" Column="21" TopLine="679"/>
+      </Position5>
+      <Position6>
+        <Filename Value="EggerGame.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position6>
+      <Position7>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="1259" Column="19" TopLine="1251"/>
+      </Position7>
+      <Position8>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position8>
+      <Position9>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="652" Column="41" TopLine="636"/>
+      </Position9>
+      <Position10>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="871" Column="50" TopLine="855"/>
+      </Position10>
+      <Position11>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position11>
+      <Position12>
+        <Filename Value="EggerGame.pas"/>
+        <Caret Line="702" Column="69" TopLine="686"/>
+      </Position12>
+      <Position13>
+        <Filename Value="EggerGame.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position13>
+      <Position14>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="200" Column="1" TopLine="174"/>
+      </Position14>
+      <Position15>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="188" Column="28" TopLine="185"/>
+      </Position15>
+      <Position16>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="189" Column="27" TopLine="172"/>
+      </Position16>
+      <Position17>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="225" Column="26" TopLine="220"/>
+      </Position17>
+      <Position18>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="194" Column="20" TopLine="173"/>
+      </Position18>
+      <Position19>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="191" Column="15" TopLine="178"/>
+      </Position19>
+      <Position20>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="249" Column="1" TopLine="220"/>
+      </Position20>
+      <Position21>
+        <Filename Value="EggerData.pas"/>
+        <Caret Line="53" Column="14" TopLine="32"/>
+      </Position21>
+      <Position22>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="1458" Column="27" TopLine="1442"/>
+      </Position22>
+      <Position23>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="450" Column="43" TopLine="434"/>
+      </Position23>
+      <Position24>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="487" Column="54" TopLine="471"/>
+      </Position24>
+      <Position25>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="596" Column="25" TopLine="580"/>
+      </Position25>
+      <Position26>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="933" Column="46" TopLine="917"/>
+      </Position26>
+      <Position27>
+        <Filename Value="EggerSprite.pas"/>
+        <Caret Line="944" Column="45" TopLine="928"/>
+      </Position27>
+      <Position28>
+        <Filename Value="EggerGame.pas"/>
+        <Caret Line="11" Column="22" TopLine="1"/>
+      </Position28>
+      <Position29>
+        <Filename Value="EggerGame.pas"/>
+        <Caret Line="572" Column="11" TopLine="555"/>
+      </Position29>
+      <Position30>
+        <Filename Value="EggerGame.pas"/>
+        <Caret Line="559" Column="3" TopLine="543"/>
+      </Position30>
+    </JumpHistory>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="..\Egger.exe"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="..\..\..\lib\JEDI-SDLv1.0\SDL\Pas\"/>
+      <OtherUnitFiles Value="..\..\..\lib\JEDI-SDLv1.0\SDL\Pas\;..\..\..\lib\JEDI-SDLv1.0\SDL_Mixer\Pas\;..\..\..\lib\JEDI-SDLv1.0\SDL_Image\Pas\;..\..\..\lib\JEDI-SDLv1.0\smpeg\Pas\;..\..\..\lib\JEDI-SDLv1.0\SDLSpriteEngine\Pas\"/>
+      <UnitOutputDirectory Value="..\out"/>
+    </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <SyntaxMode Value="Delphi"/>
+        <CStyleOperator Value="False"/>
+        <AllowLabel Value="False"/>
+        <CPPInline Value="False"/>
+        <UseAnsiStrings Value="False"/>
+      </SyntaxOptions>
+    </Parsing>
+    <Linking>
+      <Debugging>
+        <UseLineInfoUnit Value="False"/>
+        <StripSymbols Value="True"/>
+      </Debugging>
+      <LinkSmart Value="True"/>
+    </Linking>
+    <Other>
+      <CompilerMessages>
+        <IgnoredMessages idx5024="True"/>
+        <UseMsgFile Value="True"/>
+      </CompilerMessages>
+      <CompilerPath Value="$(CompPath)"/>
+    </Other>
+  </CompilerOptions>
+</CONFIG>

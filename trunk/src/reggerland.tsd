@@ -1,0 +1,33 @@
+#tileset
+#tstilebitmap ..\\gfx\\<TileSetIdentifier>.png 3200
+#end tstilebitmap
+#end tileset
+
+#file ..\\maps\\maps.ini
+[General]
+Start=L0101
+#tileset
+#map
+<MapIdentifier>=<(MapNumber - 1) * MapWidth * MapHeight * 4>
+#end map
+#end tileset
+M0806=N0806
+M0906=L0109
+M0805=L0704
+M0706=L1007
+M0807=L0304
+N1010=L0101
+#end file
+
+#binfile ..\\maps\\maps.dat 8
+#tileset
+#map
+#mapdata
+<TSBackTile>
+<TSMidTile>
+<TSFrontTile>
+<MapCode>
+#end mapdata
+#end map
+#end tileset
+#end binfile
