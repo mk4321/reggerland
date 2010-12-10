@@ -53,7 +53,7 @@ type
 
     constructor Create;
     procedure Initialize;
-    procedure PlayGame;
+    procedure Play;
     procedure Finalize;
 
     procedure DrawBackground;
@@ -177,9 +177,15 @@ type
     // if key can be placed in stack only once while pressed
     Once: Boolean;
   end;
+  TKeyRange = 0..10;
+  TKeyState = record
+    Index: TKeyRange;
+    PrevIndex: TKeyRange;
+    Down: Boolean;
+  end;
 
 const
-  KeyInfo: array [0..10] of TKeyInfo = (
+  KeyInfo: array [TKeyRange] of TKeyInfo = (
     (SDLK: 0; Once: False),
     (SDLK: SDLK_SPACE; Once: True),
     (SDLK: SDLK_LEFT; Once: False),
@@ -192,16 +198,19 @@ const
     (SDLK: SDLK_DELETE; Once: True),
     (SDLK: SDLK_ESCAPE; Once: True)
   );
+  NormalDelay = 40;
+  ShortDelay = 10;
 
-procedure TGame.PlayGame;
+procedure TGame.Play;
 const
   StartingLevel: array [Boolean] of TGameState = (gsPlayLevel, gsCatchKey);
 var
-  Now, NextTime: Cardinal;
+  Ticks, NextTicks: Cardinal;
   Event: TSDL_Event;
   Keys: PKeyStateArr;
-  isDown: Boolean;
-  si, osi: Byte;
+  Key: TKeyState;
+  //isDown: Boolean;
+  //si, osi: Byte;
 
 procedure CheckKeys;
 var
@@ -214,32 +223,33 @@ begin
       // key can be placed in stack if
       // - it can be pressed more than once (continuously)
       // - it can be pressed once and the key was not down just before
-      if not KeyInfo[i].Once or not isDown then
-        if (osi <> i) or (Counter and $3 = 0) then
-          si := i;
-      isDown := True;
+      if not KeyInfo[i].Once or not Key.Down then
+        if (Key.PrevIndex <> i) or (Counter and $3 = 0) then
+          Key.Index := i;
+      Key.Down := True;
       Exit;
     end;
   // if no pressed keys are found isDown flag is reset to false
-  isDown := False;
-  osi := 0;
+  Key.Down := False;
+  Key.PrevIndex := 0;
 end;
 
 procedure ProcessDebugKeys;
 begin
   if (Keys[SDLK_LCTRL] + Keys[SDLK_LSHIFT] = 2) then
-    case KeyInfo[si].SDLK of
+    case KeyInfo[Key.Index].SDLK of
       SDLK_DELETE: OpenDoors(gsPlayLevel);
     end
     else Exit;
-  si := 0;
+  Key.Index := 0;
   Hero.Ghostly := True;
 end;
 
 begin
-  NextTime := 0;
-  si := 0;
-  osi := 0;
+  NextTicks := 0;
+  Key.Index := 0;
+  Key.PrevIndex := 0;
+  Key.Down := False;
 
   // game loop start
   repeat
@@ -248,14 +258,14 @@ begin
     Keys := PKeyStateArr(SDL_GetKeyState(nil));
     CheckKeys;
     // keys are processed from stack, in persistent modes only
-    if (si <> 0) and (GameState in PersistentStates) then
+    if (Key.Index <> 0) and (GameState in PersistentStates) then
       with Hero do
       begin
         // hero activities are processed when hero is on the grid edge
         if Counter and $3 = 0 then
         begin
           ProcessDebugKeys;
-          case KeyInfo[si].SDLK of
+          case KeyInfo[Key.Index].SDLK of
             SDLK_SPACE:
               Attack(dx, dy);
             SDLK_LEFT:
@@ -275,13 +285,13 @@ begin
             SDLK_F10:
               GameState := gsKillHero;
           end;
-          osi := si;
-          si := 0;
+          Key.PrevIndex := Key.Index;
+          Key.Index := 0;
         end;
       end;
 
     // level starts moving if a key is pressed
-    if isDown and (GameState = gsStartLevel) then
+    if Key.Down and (GameState = gsStartLevel) then
     begin
       GameState := StartingLevel[LevelDone or (TileCount([tGold]) = 0)];
       DrawBackground;
@@ -315,10 +325,13 @@ begin
     SDL_UpdateRect(Screen, 0, 0, 0, 0);
 
     // remaining time delay at the end of loop
-    Now := SDL_GetTicks;
-    if NextTime > Now then
-      SDL_Delay(NextTime - Now);
-    NextTime := SDL_GetTicks + Cardinal(ifop(Keys[SDLK_LALT] = 1, 10, 40));
+    Ticks := SDL_GetTicks;
+    if NextTicks > Ticks then
+      SDL_Delay(NextTicks - Ticks);
+    if Keys[SDLK_LALT] = 1 then
+      NextTicks := SDL_GetTicks + ShortDelay
+    else
+      NextTicks := SDL_GetTicks + NormalDelay;
 
   until GameState = gsQuit;
   // game loop end
@@ -326,30 +339,29 @@ end;
 
 procedure TGame.Finalize;
 var
-  st: TSpriteType;
-  snd: TSoundType;
+  spritetype: TSpriteType;
+  soundtype: TSoundType;
 begin
   FIniFile.Free;
-  // finalizing audio
-  for snd := Low(TSoundType) to High(TSoundType)do
-    if FSounds[snd] <> nil then
-      Mix_FreeChunk(FSounds[snd]);
+  // audio
+  for soundtype := Low(TSoundType) to High(TSoundType)do
+    if FSounds[soundtype] <> nil then
+      Mix_FreeChunk(FSounds[soundtype]);
   Mix_CloseAudio;
 
-  // finalizing sprite engine
-  if SpriteEngine <> nil then
-    SpriteEngine.Free;
+  // sprite engine
+  SpriteEngine.Free;
 
-  // finalizing images
-  for st := Low(TSpriteType) to High(TSpriteType) do
-    if SpriteImage[st] <> nil then
-      SDL_FreeSurface(SpriteImage[st]);
+  // images
+  for spritetype := Low(TSpriteType) to High(TSpriteType) do
+    if SpriteImage[spritetype] <> nil then
+      SDL_FreeSurface(SpriteImage[spritetype]);
   if FontImage <> nil then
     SDL_FreeSurface(FontImage);
   if TileImage <> nil then
     SDL_FreeSurface(TileImage);
 
-  // finalizing background surface
+  // background surface
   if Background <> nil then
     SDL_FreeSurface(Background);
 
@@ -357,10 +369,10 @@ begin
   if Screen <> nil then
     SDL_FreeSurface(Screen);
 
-  // finalizing SDL engine
+  // SDL engine
   SDL_Quit;
-  // destroying the game itself
-  Free;
+
+  Destroy;
 end;
 
 function TGame.LoadImage(const Name: string): PSDL_Surface;

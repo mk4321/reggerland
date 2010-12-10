@@ -10,7 +10,7 @@ begin
   Game := TGame.Create;
   try
     Game.Initialize;
-    Game.PlayGame;
+    Game.Play;
   finally
     Game.Finalize;
   end;
