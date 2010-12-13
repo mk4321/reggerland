@@ -41,7 +41,7 @@ type
     CellInfo: TCellInfo;
     /// Original sprite position
     /// Used to reposition it when recovering from the death
-    Xorig, Yorig: SmallInt;
+    Xorig, Yorig: TPixCoord;
     /// Original sprite direction
     /// Used to redirect it when recovering from the death or pause
     dXorig, dYorig: TDelta;
@@ -88,8 +88,8 @@ type
     Sailor: TActiveSprite;
 
     /// Create, position and direct a sprite object
-    constructor Create(aType: TSpriteType; aMask: Byte; ax, ay: SmallInt;
-      adx: TDelta = 0; ady: TDelta = 0; aHint: Boolean = False);
+    constructor Create(aType: TSpriteType; aMask: Byte; aX, aY: TPixCoord;
+      adX: TDelta = 0; adY: TDelta = 0; aHint: Boolean = False);
     /// Destroy and free the object
     procedure Free; override;
     /// Dispatch the sprite moves
@@ -119,7 +119,7 @@ type
     procedure Live; override;
     procedure Draw; override;
     procedure Attack(adx, ady: TDelta); override;
-    procedure Reset(ax, ay: SmallInt; adx, ady: TDelta);
+    procedure Reset(aX, aY: TPixCoord; adX, adY: TDelta);
     function InBasket(Tile: TTileType; Take: Boolean = False): Boolean;
     procedure PutInBasket(Tile: TTileType);
     property Bullets: ShortInt read FBullets write SetBullets;
@@ -176,7 +176,7 @@ type
   private
     function GetPhase(Next: Boolean): Word; override;
   public
-    constructor Create(aSailor: TActiveSprite; ax, ay: SmallInt); reintroduce;
+    constructor Create(aSailor: TActiveSprite; aX, aY: TPixCoord); reintroduce;
     procedure Live; override;
   end;
 
@@ -197,7 +197,7 @@ type
     procedure GetItemsInFront(var Info: TCellInfo); override;
   public
     procedure Live; override;
-    function HeroTouched(sx, sy: SmallInt): Boolean; virtual;
+    function HeroTouched(adX, adY: TDistance): Boolean; virtual;
   end;
 
   TSkull = class(TRoamingSprite)
@@ -205,7 +205,7 @@ type
     function GetPhase(Next: Boolean): Word; override;
   public
     procedure Live; override;
-    function HeroTouched(sx, sy: SmallInt): Boolean; override;
+    function HeroTouched(adX, adY: TDistance): Boolean; override;
   end;
 
   TRoller = class(TRoamingSprite)
@@ -223,10 +223,10 @@ type
     procedure Hurt(adx, ady: TDelta); override;
     procedure SetState(const Value: TSpriteState); override;
   public
-    constructor Create(ax, ay: SmallInt; adx: TDelta = 0; ady: TDelta = 0;
+    constructor Create(aX, aY: TPixCoord; adX: TDelta = 0; adY: TDelta = 0;
       aLevelHint: Boolean = False); reintroduce;
     procedure Live; override;
-    function HeroTouched(sx, sy: SmallInt): Boolean; override;
+    function HeroTouched(adX, adY: TDistance): Boolean; override;
     procedure TouchMe;
     class procedure DoHint;
   end;
@@ -236,7 +236,7 @@ type
     function HurdleInFront: Boolean; override;
     function GetSpeed: TSpeed; override;
   public
-    function HeroTouched(sx, sy: SmallInt): Boolean; override;
+    function HeroTouched(adX, adY: TDistance): Boolean; override;
   end;
 
 implementation
@@ -264,18 +264,18 @@ uses
                 if True the sprite is used as a hint in the current level
 }
 
-constructor TActiveSprite.Create(aType: TSpriteType; aMask: Byte;
-  ax, ay: SmallInt; adx: TDelta = 0; ady: TDelta = 0; aHint: Boolean = False);
+constructor TActiveSprite.Create(aType: TSpriteType; aMask: Byte; aX, aY: TPixCoord;
+  adX: TDelta = 0; adY: TDelta = 0; aHint: Boolean = False);
 begin
   inherited Create('', MapCellSize, MapCellSize);
 
   SpriteType := aType;
   Game.SpriteEngine.AddSprite(Self);
   // original coordinates are needed for the recovery
-  Xorig := ax;
-  Yorig := ay;
-  dXorig := adx;
-  dYorig := ady;
+  Xorig := aX;
+  Yorig := aY;
+  dXorig := adX;
+  dYorig := adY;
   // position the sprite to the original coordinates
   Recover;
   State := ssNormal;
@@ -283,7 +283,7 @@ begin
   /// * 3 (highest): Hero
   /// * 0 (lowest): ammunition
   /// * 1 (middle): all others
-  z := ifop(aType = sHero, 3, ifop(aType in Ammunition, 0, 1));
+  Z := ifop(aType = sHero, 3, ifop(aType in Ammunition, 0, 1));
   LoopMask := aMask;
   AnimPhase := GetPhase(False);
   LevelHint := aHint;
@@ -347,15 +347,16 @@ var
   }
   procedure CheckRecovery;
   var
-    mx, my, gx, gy: SmallInt;
-    sprite: TActiveSprite;
+    MapX, MapY: TMapCoord;
+    GridX, GridY: TGridCoord;
+    Sprite: TActiveSprite;
   begin
-    gx := PixelToGrid(x);
-    gy := PixelToGrid(y);
-    // look for a sprite in the same place excluding self
-    sprite := Game.SpriteIn(gx, gx + 1, gy, gy + 1, Self);
+    GridX := PixToGrid(X);
+    GridY := PixToGrid(Y);
+    // look for a sprite in the same place excluding itself
+    Sprite := Game.SpriteIn(GridX, GridX + 1, GridY, GridY + 1, Self);
     // if no sprites occupy this cell (Hero is not counted as an occupant)
-    if (sprite = nil) or (sprite.SpriteType = sHero) then
+    if (Sprite = nil) or (Sprite.SpriteType = sHero) then
     begin
       Dec(RecoveryTime);
       if RecoveryTime = 0 then
@@ -364,24 +365,24 @@ var
     else
     // if the current placeholder is occupied
     begin
-      for my := 0 to MapHeight - 1 do
-        for mx := 0 to MapWidth - 1 do
-          with Game.Map[mx, my] do
+      for MapY := 0 to MapHeight - 1 do
+        for MapX := 0 to MapWidth - 1 do
+          with Game.Map[MapX, MapY] do
           begin
-            gx := mx shl ShiftMapToGrid;
-            gy := my shl ShiftMapToGrid;
-            // if the cell is for sprite of the same type and it's free
+            GridX := MapToGrid(MapX);
+            GridY := MapToGrid(MapY);
+            // if the cell is for Sprite of the same type and it's free
             if (Item = tEmpty) and (TSpriteType(Sprite shr 4) = SpriteType) and
-              (Game.SpriteIn(gx, gx + 1, gy, gy + 1) = nil) then
+              (Game.SpriteIn(GridX, GridX + 1, GridY, GridY + 1) = nil) then
               begin
-                // reposition the sprite and start recovery again
-                Xorig := mx * MapCellSize;
-                Yorig := my * MapCellSize;
+                // reposition the Sprite and start recovery again
+                Xorig := MapToPix(MapX);
+                Yorig := MapToPix(MapY);
                 Recover;
                 Exit;
               end;
           end;
-      // no free placeholders found - removing the sprite
+      // no free placeholders found - removing the Sprite
       Kill;
     end;
   end; { CheckRecovery }
@@ -400,7 +401,7 @@ begin { Move }
   if (State = ssSwimming) and not Moving and (PauseTime < PauseTimeMax - 28) then
   begin
     // check if water in the current cell has a flow (d is its direction)
-    d := Game.Map[PixelToMap(x), PixelToMap(y)].Weight - 1;
+    d := Game.Map[PixToMap(x), PixToMap(y)].Weight - 1;
     // trying to push sprite in that direction
     if (d >= 0) and Pushed(ItoDX[d], ItoDY[d]) then
     begin
@@ -441,8 +442,8 @@ begin { Move }
 
   if not Moving then
   begin
-    b1 := Game.Map[PixelToMap(x), PixelToMap(y)].Back;
-    b2 := Game.Map[PixelToMap(x + GridCellSize), PixelToMap(y + GridCellSize)].Back;
+    b1 := Game.Map[PixToMap(x), PixToMap(y)].Back;
+    b2 := Game.Map[PixToMap(x + GridCellSize), PixToMap(y + GridCellSize)].Back;
     // if the sprite stops on a liquid surface it starts swimming
     // - Hero cannot swim - he can only sail
     // - ammunition does not swim - it flies above
@@ -513,7 +514,7 @@ begin
       begin
         Kill;
         // show the original raft item back on the map
-        if LevelDone then
+        if LevelStatus = lsDone then
           GameState := gsCatchKey;
         DrawBackground;
       end;
@@ -558,15 +559,15 @@ end; { HurdleInFront }
 
 procedure TActiveSprite.GetItemsInFront(var Info: TCellInfo);
 var
-  gx1, gx2, gy1, gy2: SmallInt;
+  GridX1, GridX2, GridY1, GridY2: TGridCoord;
 begin
-  gx1 := PixelToGrid(x) + ifop(dX = 0, 0, ifop(dX > 0, GridsInMap, -1));
-  gx2 := gx1 + ifop(dX = 0, GridsInMap - 1, 0);
-  gy1 := PixelToGrid(y) + ifop(dY = 0, 0, ifop(dY > 0, GridsInMap, -1));
-  gy2 := gy1 + ifop(dY = 0, GridsInMap - 1, 0);
+  GridX1 := PixToGrid(x) + ifop(dX = 0, 0, ifop(dX > 0, GridsInMap, -1));
+  GridX2 := GridX1 + ifop(dX = 0, GridsInMap - 1, 0);
+  GridY1 := PixToGrid(y) + ifop(dY = 0, 0, ifop(dY > 0, GridsInMap, -1));
+  GridY2 := GridY1 + ifop(dY = 0, GridsInMap - 1, 0);
 
-  Info.Sprite[0] := Game.SpriteIn(gx1, gx1, gy1, gy1, Game.Hero.Sail);
-  Info.Sprite[1] := Game.SpriteIn(gx2, gx2, gy2, gy2, Game.Hero.Sail);
+  Info.Sprite[0] := Game.SpriteIn(GridX1, GridX1, GridY1, GridY1, Game.Hero.Sail);
+  Info.Sprite[1] := Game.SpriteIn(GridX2, GridX2, GridY2, GridY2, Game.Hero.Sail);
   if Info.Sprite[0] = Self then
     Info.Sprite[0] := nil;
   if Info.Sprite[1] = Self then
@@ -575,8 +576,8 @@ begin
     Info.Sprite[2] := Info.Sprite[0]
   else
     Info.Sprite[2] := nil;
-  Info.Cell[0] := Game.Map[gx1 shr ShiftMapToGrid, gy1 shr ShiftMapToGrid];
-  Info.Cell[1] := Game.Map[gx2 shr ShiftMapToGrid, gy2 shr ShiftMapToGrid];
+  Info.Cell[0] := Game.Map[GridToMap(GridX1), GridToMap(GridY1)];
+  Info.Cell[1] := Game.Map[GridToMap(GridX2), GridToMap(GridY2)];
 end; { GetItemsInFront }
 
 { @ Check if the sprite can step on the given map cell
@@ -594,12 +595,12 @@ begin
   if State = ssSwimming then
   begin
     Backs := LiquidItems;
-    Items := HeroStepItems;
+    Items := HeroPathItems;
   end
   else
   begin
-    Backs := AnyoneStepBacks;
-    Items := AnyoneStepItems;
+    Backs := AnyPathBacks;
+    Items := AnyPathItems;
     if State = ssPaused then
       Include(Backs, tRoad);
   end;
@@ -614,7 +615,7 @@ end; { CanStepOn }
 procedure TActiveSprite.Draw;
 begin
   if (State in EggStates) and (SpriteType <> sRaft) then
-    Image := Game.SpriteIMage[sEgg]
+    Image := Game.SpriteImage[sEgg]
   else
     Image := Game.SpriteImage[SpriteType];
 
@@ -646,11 +647,20 @@ end; { Hurt }
 function TActiveSprite.GetPhase(Next: Boolean): Word;
 begin
   Next := Next and Moving;
-  Result :=
-    ifop(State = ssPaused, 3 - PauseTime shr 5,
-    ifop(State = ssSwimming, 7 - PauseTime shr 5,
-    ifop(LoopMask = $FF, 0, DeltaToIndex(dX, dY) * (LoopMask + 1) +
-      ((Game.Counter * Ord(Next)) and LoopMask))));
+//  Result :=
+//    ifop(State = ssPaused, 3 - PauseTime shr 5,
+//    ifop(State = ssSwimming, 7 - PauseTime shr 5,
+//    ifop(LoopMask = $FF, 0, DeltaToIndex(dX, dY) * (LoopMask + 1) +
+//      ((Game.MovePhase * Ord(Next)) and LoopMask))));
+  if State = ssPaused then
+    Result := 3 - PauseTime shr 5
+  else if State = ssSwimming then
+    Result := 7 - PauseTime shr 5
+  else if LoopMask = $FF then
+    Result := 0
+  else
+    Result := DeltaToIndex(dX, dY) * (LoopMask + 1) +
+      (Byte(Game.MovePhase * Ord(Next)) and LoopMask);
 end; { GetPhase }
 
 { @ Start the attack (shooting)
@@ -756,28 +766,28 @@ end; { SetLevelHint }
 
 procedure THero.Live;
 var
-  mx, my: SmallInt;
+  MapX, MapY: TMapCoord;
 begin
   if (State = ssSleeping) or Ghostly or not InMCell then Exit;
 
-  mx := PixelToMap(x);
-  my := PixelToMap(y);
-  with Game, Map[mx, my] do
+  MapX := PixToMap(X);
+  MapY := PixToMap(Y);
+  with Game, Map[MapX, MapY] do
   begin
     case Item of
 
-      tGold, tGoldInf:
+      tHeart, tHeartInf:
         begin
           CheckHidden;
 
-          Bullets := ifop(Item = tGold, Bullets + Weight, -1);
+          Bullets := ifop(Item = tHeart, Bullets + Weight, -1);
           if Weight > 0 then
             PlaySound(sndRecharge)
           else
             PlaySound(sndGold);
 
-          SetMap(mx, my, mlItem, tEmpty);
-          if TileCount([tGold]) = 0 then
+          SetMap(MapX, MapY, mlItem, tEmpty);
+          if TileCount([tHeart]) = 0 then
             GameState := gsOpenChest;
         end;
 
@@ -791,35 +801,35 @@ begin
           if Item = tRaft then
           begin
             Hero.PutInBasket(Item);
-            Game.DrawTile(mx, my, True);
+            Game.DrawTile(MapX, MapY, True);
           end
           else
-            SetMap(mx, my, mlItem, tEmpty);
+            SetMap(MapX, MapY, mlItem, tEmpty);
         end
-        else if (Weight > 0) and (TileCount([tGold]) = Weight) then
+        else if (Weight > 0) and (TileCount([tHeart]) = Weight) then
           CheckHidden(True);
 
-      tDoorIO..tDoorUO:
+      tDoorOpenInside..tDoorOpenUp:
         begin
           vX := 0;
           vY := 0;
           if Sail <> nil then
             DirectTo(Sail.dX, Sail.dY);
           if Back <> tEmpty then
-            if Item in [tDoorDO, tDoorUO] then
-              SetNextLevel(0, 0, ifop(Item = tDoorDO, -1, 1))
+            if Item in [tDoorOpenDown, tDoorOpenUp] then
+              SetNextLevel(0, 0, ifop(Item = tDoorOpenDown, -1, 1))
             else
               SetNextLevel(dX, dY, 0);
           GameState := gsNextLevel;
-          SetMap(mx, my, mlItem, tEmpty);
+          SetMap(MapX, MapY, mlItem, tEmpty);
         end;
 
-      tBridgeV, tSpanner..tHammer, tBoxer, tEraser:
+      tBridgeVertical, tSpanner..tHammer, tBoxer, tEraser:
         if Weight = 0 then
         begin
           PlaySound(sndGold);
           Hero.PutInBasket(Item);
-          SetMap(mx, my, mlItem, tEmpty);
+          SetMap(MapX, MapY, mlItem, tEmpty);
         end;
     end;
   end;
@@ -860,17 +870,17 @@ var
 begin
   if Ghostly then
   begin
-    Backs := GhostStepBacks;
-    Items := GhostStepItems;
+    Backs := GhostPathBacks;
+    Items := GhostPathItems;
   end
   else
   begin
-    Backs := HeroStepBacks;
-    Items := HeroStepItems;
+    Backs := HeroPathBacks;
+    Items := HeroPathItems;
     if (dX <> 0) and (x mod MapCellSize = 0) or (dY <> 0) and (y mod MapCellSize = 0) then
-      Exclude(Items, TTileType(Ord(tArrowD) - DeltaToIndex(dX, dY)));
+      Exclude(Items, TTileType(Ord(tArrowDown) - DeltaToIndex(dX, dY)));
     if (dY > 0) then
-      Exclude(Items, tDoorUO);
+      Exclude(Items, tDoorOpenUp);
   end;
 
   with Info do
@@ -880,10 +890,10 @@ end; { CanStepOn }
 
 procedure THero.Attack;
 const
-  cnextarrow: array [tArrowU..tArrowD] of TTileType = (
-    tArrowR, tArrowU, tArrowD, tArrowL);
+  CNextArrow: array [tArrowUp..tArrowDown] of TTileType =
+    (tArrowRight, tArrowUp, tArrowDown, tArrowLeft);
 var
-  mx, my: SmallInt;
+  MapX, MapY: TMapCoord;
   Box: TActiveSprite;
 
   procedure Cast(Tile: TTileType);
@@ -900,7 +910,7 @@ var
                 State := ssRecovering;
                 RecoveryTime := RecoveryTime shr 2;
               end;
-            tSoporific:
+            tHypnotic:
               if SpriteType in [sMedusa, sCuckold] then
                 State := ssSleeping;
           end;
@@ -924,45 +934,45 @@ var
   end; { BoxInDirection }
 
 begin { Attack }
-  mx := PixelToMap(x) + dX;
-  my := PixelToMap(y) + dY;
-  with Game, Map[mx, my] do
+  MapX := PixToMap(x) + dX;
+  MapY := PixToMap(y) + dY;
+  with Game, Map[MapX, MapY] do
     if Ghostly then
       Ghostly := False
 
     else if InMCell and (Item in FragileItems) and
       (InBasket(tHammer, True) or InBasket(tEraser, True)) then
-        SetMap(mx, my, mlItem, tEmpty)
+        SetMap(MapX, MapY, mlItem, tEmpty)
 
     else if InGCell and InBasket(tBoxer, True) then
     begin
-      with TBox.Create(sBox, $FF, x + GridCellSize * dX, y + GridCellSize * dY, dX, dY) do
+      with TBox.Create(sBox, $FF, x + GridToPix(dX), y + GridToPix(dY), dX, dY) do
         if not Pushed(dX, dY) then
           Kill;
     end
 
-    else if InMCell and (Back in LiquidItems) and InBasket(tBridgeV, True) then
+    else if InMCell and (Back in LiquidItems) and InBasket(tBridgeVertical, True) then
     begin
-      SetMap(mx, my, mlBack, tGrass);
-      SetMap(mx, my, mlMid, ifop(dX <> 0, tBridgeH, tBridgeV));
+      SetMap(MapX, MapY, mlBack, tGrass);
+      SetMap(MapX, MapY, mlMid, ifop(dX <> 0, tBridgeHorizontal, tBridgeVertical));
       if Sail <> nil then
         Pushed(dX, dY);
     end
 
     else if InMCell and (Item in ArrowItems) and InBasket(tSpanner, True) then
-      SetMap(mx, my, mlItem, cnextarrow[Item])
+      SetMap(MapX, MapY, mlItem, CNextArrow[Item])
 
     else if InGCell and (Back = tWater) and InBasket(tRaft, True) then
     begin
-      TShip.Create(nil, x + dX * MapCellSize, y + dY * MapCellSize);
+      TShip.Create(nil, x + MapToPix(dX), y + MapToPix(dY));
       Pushed(dX, dY);
     end
 
     else if InBasket(tHourglass, True) then
       Cast(tHourglass)
 
-    else if InBasket(tSoporific, True) then
-      Cast(tSoporific)
+    else if InBasket(tHypnotic, True) then
+      Cast(tHypnotic)
 
     else if BoxInDirection and InBasket(tMagnet, True) then
     begin
@@ -981,13 +991,13 @@ begin { Attack }
   Game.PlaySound(sndShoot);
 end; { Attack }
 
-procedure THero.Reset(ax, ay: SmallInt; adx, ady: TDelta);
+procedure THero.Reset(aX, aY: TPixCoord; adX, adY: TDelta);
 var
   i: Byte;
 begin
-  x := ax;
-  y := ay;
-  DirectTo(adx, ady);
+  X := aX;
+  Y := aY;
+  DirectTo(adX, adY);
   vX := 0;
   vY := 0;
   AnimPhase := 0;
@@ -996,7 +1006,7 @@ begin
   Sail := nil;
   Ghostly := False;
   Bullets := 0;
-  for i := 0 to 2 do
+  for i := low(Basket) to high(Basket) do
     InBasket(Basket[i], True);
   AnimPhase := GetPhase(False);
 end; { Reset }
@@ -1054,14 +1064,14 @@ begin
   end
   else
   begin
-    Dec(x, dX * MapCellSize);
-    Dec(y, dY * MapCellSize);
+    Dec(x, MapToPix(dX));
+    Dec(y, MapToPix(dY));
     for i := 1 to GridsInMap do
     begin
       if HurdleInFront then
         Game.GameState := gsKillHero;
-      Inc(x, dX * GridCellSize);
-      Inc(y, dY * GridCellSize);
+      Inc(x, GridToPix(dX));
+      Inc(y, GridToPix(dY));
     end;
   end;
 end; { SetGhostly }
@@ -1069,8 +1079,8 @@ end; { SetGhostly }
 function THero.GetSpeed: TSpeed;
 begin
   Result := ifop(State = ssSleeping, 0, inherited GetSpeed);
-  if (Game.Map[PixelToMap(x + GridCellSize), PixelToMap(y + GridCellSize)].Back = tSand) and
-    (Game.Map[PixelToMap(x + GridCellSize - 1), PixelToMap(y + GridCellSize - 1)].Back = tSand) then
+  if (Game.Map[PixToMap(x + GridCellSize), PixToMap(y + GridCellSize)].Back = tSand) and
+    (Game.Map[PixToMap(x + GridCellSize - 1), PixToMap(y + GridCellSize - 1)].Back = tSand) then
       Result := Result shr 1;
 end; { GetSpeed }
 
@@ -1136,7 +1146,7 @@ end; { GetPhase }
 procedure TFireball.SetState(const Value: TSpriteState);
 begin
   inherited;
-  if LevelHint and (Value = ssSwimming) and (Game.Hero.InBasket(tBridgeV)) then
+  if LevelHint and (Value = ssSwimming) and (Game.Hero.InBasket(tBridgeVertical)) then
   begin
     LevelHint := False;
     DoHint;
@@ -1146,7 +1156,7 @@ end; { SetState }
 
 class procedure TFireball.DoHint;
 begin
-  Game.ReplaceTiles(tLava, tGranite, mlBack);
+  Game.ReplaceTiles(tLava, tBasalt, mlBack);
 end; { DoHint }
 
 { TMedusa }
@@ -1214,30 +1224,30 @@ function TBullet.CanStepOn(const Info: TCellInfo): Boolean;
 var
   Items: TTiles;
 begin
-  Items := BulletStepItems;
+  Items := BulletPathItems;
   with Info do
   begin
     if Cell[0].Weight + Cell[1].Weight <> 0 then
       Items := Items - ChestItems;
-    Result := ([Cell[0].Back, Cell[1].Back] <= BulletStepBacks) and
+    Result := ([Cell[0].Back, Cell[1].Back] <= BulletPathBacks) and
       ([Cell[0].Item, Cell[1].Item] <= Items);
   end;
 end; { CanStepOn }
 
 function TBullet.CanHitTarget: Boolean;
 var
-  ox, oy: SmallInt;
+  Xold, Yold: TPixCoord;
 begin
-  ox := x;
-  oy := y;
+  Xold := X;
+  Yold := Y;
   while not HurdleInFront do
   begin
-    Inc(x, GridCellSize * dX);
-    Inc(y, GridCellSize * dY);
+    Inc(X, GridToPix(dX));
+    Inc(Y, GridToPix(dY));
   end;
   Result := (CellInfo.Sprite[0] = Game.Hero) or (CellInfo.Sprite[1] = Game.Hero);
-  x := ox;
-  y := oy;
+  X := Xold;
+  Y := Yold;
 end; { CanHitTarget }
 
 function TBullet.GetSpeed: TSpeed;
@@ -1250,8 +1260,8 @@ end; { GetSpeed }
 function TBox.CanStepOn(const Info: TCellInfo): Boolean;
 begin
   with Info do
-    Result := ([Cell[0].Back, Cell[1].Back] <= BoxStepBacks) and
-      ([Cell[0].Item, Cell[1].Item] <= AnyoneStepItems);
+    Result := ([Cell[0].Back, Cell[1].Back] <= BoxPathBacks) and
+      ([Cell[0].Item, Cell[1].Item] <= AnyPathItems);
 end; { CanStepOn }
 
 procedure TBox.Live;
@@ -1259,12 +1269,12 @@ var
   i: Word;
 begin
   with Game, SpriteEngine do
-    if LevelHint and (GameState = gsCatchKey) and not LevelDone and
+    if LevelHint and (GameState = gsCatchKey) and (LevelStatus <> lsDone) and
       not Moving then
       begin
         for i := 0 to Sprites.Count - 1 do
           if (Sprites[i] is TBox) then
-            with TBox(Sprites[i]), Map[PixelToMap(x), PixelToMap(y)] do
+            with TBox(Sprites[i]), Map[PixToMap(x), PixToMap(y)] do
               if LevelHint and
                 (not InMCell or (TSpriteType(Sprite shr 4 ) <> sBox)) then Exit;
 
@@ -1280,9 +1290,9 @@ end; { Live }
 
 { TShip }
 
-constructor TShip.Create(aSailor: TActiveSprite; ax, ay: SmallInt);
+constructor TShip.Create(aSailor: TActiveSprite; aX, aY: TPixCoord);
 begin
-  inherited Create(sRaft, 0, ax, ay);
+  inherited Create(sRaft, 0, aX, aY);
   State := ssSwimming;
   Sailor := aSailor;
   Game.SpriteEngine.SortSprites;
@@ -1328,9 +1338,9 @@ end; { Live }
 
 { TRoamingSprite }
 
-function TRoamingSprite.HeroTouched(sx, sy: SmallInt): Boolean;
+function TRoamingSprite.HeroTouched(adX, adY: TDistance): Boolean;
 begin
-  Result := (sx <= GridCellSize) and (sy <= GridCellSize);
+  Result := (adX <= GridCellSize) and (adY <= GridCellSize);
   if Result then
     Game.GameState := gsKillHero;
 end; { HeroTouched }
@@ -1379,11 +1389,11 @@ begin
     adx := ifop(adx <> 0, adx, ifop(dX <> 0, dX, 1));
     ady := sgn(Game.Hero.y - y);
     ady := ifop(ady <> 0, ady, ifop(dY <> 0, dY, 1));
-    if (abs(Game.Hero.x - x) <= GridCellSize * 1) then
+    if (abs(Game.Hero.x - x) <= GridToPix(1)) then
       if not Pushed(0, ady) then
         if not Pushed(adx, 0) then
           Pushed(-adx, 0);
-    if (abs(Game.Hero.y - y) <= GridCellSize * 1) then
+    if (abs(Game.Hero.y - y) <= GridToPix(1)) then
       if not Pushed(adx, 0) then
         if not Pushed(0, ady) then
           Pushed(0, -ady);
@@ -1391,10 +1401,10 @@ begin
   inherited;
 end; { Live }
 
-function TSkull.HeroTouched(sx, sy: SmallInt): Boolean;
+function TSkull.HeroTouched(adX, adY: TDistance): Boolean;
 begin
   if Game.GameState = gsCatchKey then
-    Result := inherited HeroTouched(sx, sy)
+    Result := inherited HeroTouched(adX, adY)
   else
     Result := False;
 end; { HeroTouched }
@@ -1423,11 +1433,11 @@ end; { Live }
 
 { TSleepy }
 
-constructor TSleepy.Create(ax, ay: SmallInt; adx: TDelta = 0; ady: TDelta = 0;
+constructor TSleepy.Create(aX, aY: TPixCoord; adX: TDelta = 0; adY: TDelta = 0;
   aLevelHint: Boolean = False);
 begin
-  inherited Create(sSleepy, 3, ax, ay, adx, ady, aLevelHint);
-  if LevelHint and (adx <> 0) then
+  inherited Create(sSleepy, 3, aX, aY, adX, adY, aLevelHint);
+  if LevelHint and (adX <> 0) then
     Touched := 10;
 end; { Create }
 
@@ -1441,9 +1451,10 @@ begin
   inherited;
 end; { Live }
 
-function TSleepy.HeroTouched(sx, sy: SmallInt): Boolean;
+function TSleepy.HeroTouched(adX, adY: TDistance): Boolean;
 begin
-  Result := (sx <= MapCellSize) and (sy <= GridCellSize) or (sx <= GridCellSize) and (sy <= MapCellSize);
+  Result := (adX <= MapCellSize) and (adY <= GridCellSize)
+    or (adX <= GridCellSize) and (adY <= MapCellSize);
   if not Result then Exit;
   vX := 0;
   vY := 0;
@@ -1455,8 +1466,8 @@ begin
   if PauseTime > 0 then
     Result := inherited GetPhase(Next)
   else
-    Result := DeltaToIndex(dX, dY) shl 2 or ifop(State = ssSleeping,
-      Game.Counter shr 2 and $3 or $10, Game.Counter {shr 1} and $3);
+    Result := Byte(DeltaToIndex(dX, dY) shl 2) or ifop(State = ssSleeping,
+      Game.MovePhase shr 2 and $3 or $10, Game.MovePhase {shr 1} and $3);
 end; { GetPhase }
 
 procedure TSleepy.TouchMe;
@@ -1499,12 +1510,12 @@ end; { DoHint }
 
 { TStony }
 
-function TStony.HeroTouched(sx, sy: SmallInt): Boolean;
+function TStony.HeroTouched(adX, adY: TDistance): Boolean;
 begin
-  Result := (sx = 0) or (sx <= GridCellSize) and (sy <= MapCellSize) or
-    (sy <= GridCellSize) and (sx <= MapCellSize * 2);
-  if (sx = 0) and (Game.Counter and $3 = 0) then
-    Pushed(0, sgn(Game.Hero.y - y));
+  Result := (adX = 0) or (adX <= GridCellSize) and (adY <= MapCellSize) or
+    (adY <= GridCellSize) and (adX <= MapCellSize * 2);
+  if (adX = 0) and (Game.MovePhase and $3 = 0) then
+    Pushed(0, sgn(Game.Hero.Y - Y));
 end; { HeroTouched }
 
 function TStony.GetSpeed: TSpeed;

@@ -1,12 +1,20 @@
 { Data types and constants
 
   @Author  Alexey Yarochkin
-  @Version 27.01.2005 v0.1
+  @Version 07.12.2010 v0.2
+  @History 27.01.2005 v0.1
 }
 
 unit EggerData;
 
 interface
+
+type
+  TPixCoord = SmallInt;
+  TMapCoord = SmallInt;
+  TGridCoord = SmallInt;
+  TLevelTimer = SmallInt;
+  TDistance = SmallInt;
 
 const
   MapCellSize = 32;
@@ -28,43 +36,51 @@ const
 
 type
   TTileType = (tNothing,
-    tGrass, tRoad, tIce, tGranite, tSand, tWater, tLava,
+    { terrain }
+    tGrass, tRoad, tIce, tBasalt, tSand, tWater, tLava,
+    { decor }
     tStone, tTree,
-    tBridgeV, tBridgeH,
-    tGold, tDiamond, tGoldInf, tBoxer, tEraser, tChest, tKey, tMasterkey, tRaft,
-    tSpanner, tHourglass, tSoporific, tMagnet, tHammer,
-    tBorderTL, tBorderT, tBorderTR,
-    tBorderL, tBorderR,
-    tBorderBL, tBorderB, tBorderBR,
-    tDoorIO, tDoorTO, tDoorLO, tDoorRO, tDoorBO, tDoorDO, tDoorUO,
-    tDoorT, tDoorL, tDoorR, tDoorB, tDoorD, tDoorU,
-    tArrowU, tArrowL, tArrowR, tArrowD,
+    { bridge }
+    tBridgeVertical, tBridgeHorizontal,
+    { item }
+    tHeart, tDiamond, tHeartInf, tBoxer, tEraser, tChest, tKey, tMasterKey, tRaft,
+    { tool }
+    tSpanner, tHourglass, tHypnotic, tMagnet, tHammer,
+    { barrier }
+    tBorderTopLeft, tBorderTop, tBorderTopRight, tBorderLeft, tBorderRight,
+    tBorderBottomLeft, tBorderBottom, tBorderBottomRight,
+    { door }
+    tDoorOpenInside, tDoorOpenTop, tDoorOpenLeft,
+    tDoorOpenRight, tDoorOpenBottom, tDoorOpenDown, tDoorOpenUp,
+    tDoorTop, tDoorLeft, tDoorRight, tDoorBottom, tDoorDown, tDoorUp,
+    { directed road }
+    tArrowUp, tArrowLeft, tArrowRight, tArrowDown,
     tLive, tBullet,
     tEmpty = $FF);
 
   TTiles = set of TTileType;
 
 const
-  CollectedItems = [tBridgeV..tBridgeH, tGold..tMasterKey];
-  HiddenItems = [tBridgeV, tSpanner..tHammer];
+  CollectedItems = [tBridgeVertical..tBridgeHorizontal, tHeart..tMasterKey];
+  HiddenItems = [tBridgeVertical, tSpanner..tHammer];
   ChestItems = [tKey..tRaft];
-  ArrowItems = [tArrowU..tArrowD];
+  ArrowItems = [tArrowUp..tArrowDown];
   FragileItems = [tStone..tTree];
   LiquidItems = [tWater..tLava];
-  SpriteHolders = [tEmpty, tDoorDO, tDoorUO, tDoorD, tDoorU];
-  BoxStepBacks = [tGrass..tSand];
-  HeroStepBacks = BoxStepBacks + [tNothing, tEmpty];
-  AnyoneStepBacks = BoxStepBacks - [tRoad];
-  BulletStepBacks = BoxStepBacks + LiquidItems;
-  GhostStepBacks = BulletStepBacks;
-  AnyoneStepItems = [tBridgeV, tRaft..tHammer, tDoorD, tDoorU,
-    tArrowU..tArrowD, tEmpty];
-  HeroStepItems = [tBridgeV..tHammer, tDoorIO..tDoorUO, tDoorD, tDoorU,
-    tArrowU..tArrowD, tEmpty];
-  GhostStepItems = [tStone..tHammer, tDoorDO, tDoorUO, tDoorD, tDoorU,
-    tArrowU..tArrowD, tEmpty];
-  BulletStepItems = [tTree..tBridgeH, tKey..tHammer, tDoorD, tDoorU,
-    tArrowU..tArrowD, tEmpty];
+  SpriteHolders = [tEmpty, tDoorOpenDown, tDoorOpenUp, tDoorDown, tDoorUp];
+  BoxPathBacks = [tGrass..tSand];
+  HeroPathBacks = BoxPathBacks + [tNothing, tEmpty];
+  AnyPathBacks = BoxPathBacks - [tRoad];
+  BulletPathBacks = BoxPathBacks + LiquidItems;
+  GhostPathBacks = BulletPathBacks;
+  AnyPathItems = [tBridgeVertical, tRaft..tHammer, tDoorDown, tDoorUp,
+    tArrowUp..tArrowDown, tEmpty];
+  HeroPathItems = [tBridgeVertical..tHammer, tDoorOpenInside..tDoorOpenUp,
+    tDoorDown, tDoorUp, tArrowUp..tArrowDown, tEmpty];
+  GhostPathItems = [tStone..tHammer, tDoorOpenDown, tDoorOpenUp, tDoorDown, tDoorUp,
+    tArrowUp..tArrowDown, tEmpty];
+  BulletPathItems = [tTree..tBridgeHorizontal, tKey..tHammer, tDoorDown, tDoorUp,
+    tArrowUp..tArrowDown, tEmpty];
 
 type
   TGameState = (
@@ -99,12 +115,12 @@ type
     sMedusa,   {70}
     sStony,    {80}
     sCuckold,  {90}
-    sBullet,   {xx}
-    sFire,     {xx}
-    sKnife,    {xx}
-    sFlash,    {xx}
-    sEgg,      {xx}
-    sRaft      {xx});
+    sBullet,   {  }
+    sFire,     {  }
+    sKnife,    {  }
+    sFlash,    {  }
+    sEgg,      {  }
+    sRaft      {  });
 
 const
   Ammunition = [sBullet, sFire, sKnife, sFlash];
@@ -137,18 +153,19 @@ type
 
   TDelta = -1..1;
   TSpeed = 0..MapCellSize;
-  TLevelFlags = array [minLevelMapFloor..maxLevelMapFloor,
-                       0..LevelMapHeight - 1,
-                       0..LevelMapWidth - 1] of Boolean;
+  TLevelStatus = (lsNew, lsDone);
+  TMapLevelStatus = array [minLevelMapFloor..maxLevelMapFloor,
+                          0..LevelMapHeight - 1,
+                          0..LevelMapWidth - 1] of TLevelStatus;
 
-  T3DCoord = record
-    x, y, z: ShortInt;
+  T3DMapCoord = record
+    mapX, mapY, mapZ: TMapCoord;
   end;
   TGameRecord = record
-    LevelDone: TLevelFlags;
-    Level: T3DCoord;
-    x, y: SmallInt;
-    dx, dy: TDelta;
+    MapLevelStatus: TMapLevelStatus;
+    Level: T3DMapCoord;
+    X, Y: TPixCoord;
+    dX, dY: TDelta;
   end;
 
 resourcestring
@@ -184,9 +201,13 @@ const
 
 function RectsIntersect(
   aLeft1, aRight1, aTop1, aBottom1,
-  aLeft2, aRight2, aTop2, aBottom2: SmallInt): Boolean;
-function PixelToGrid(aValue: SmallInt): SmallInt; register;
-function PixelToMap(aValue: SmallInt): SmallInt; register;
+  aLeft2, aRight2, aTop2, aBottom2: TPixCoord): Boolean;
+function PixToGrid(aValue: TPixCoord): TGridCoord; register;
+function GridToPix(aValue: TGridCoord): TPixCoord; register;
+function PixToMap(aValue: TPixCoord): TMapCoord; register;
+function MapToPix(aValue: TMapCoord): TPixCoord; register;
+function GridToMap(aValue: TGridCoord): TMapCoord; register;
+function MapToGrid(aValue: TMapCoord): TGridCoord; register;
 function DeltaToIndex(dX, dY: TDelta): Byte; register;
 function ifop(aCondition: Boolean; aTrueResult, aFalseResult: SmallInt): SmallInt; register; overload;
 function ifop(aCondition: Boolean; aTrueResult, aFalseResult: TTileType): TTileType; register; overload;
@@ -197,25 +218,45 @@ implementation
 
 function RectsIntersect(
   aLeft1, aRight1, aTop1, aBottom1,
-  aLeft2, aRight2, aTop2, aBottom2: SmallInt): Boolean;
+  aLeft2, aRight2, aTop2, aBottom2: TPixCoord): Boolean;
 begin
   Result := (aLeft1 <= aRight2) and (aLeft2 <= aRight1)
     and (aTop1 <= aBottom2) and (aTop2 <= aBottom1);
 end;
 
-function PixelToGrid(aValue: SmallInt): SmallInt;
+function PixToGrid(aValue: TPixCoord): TGridCoord;
 begin
   Result := aValue div GridCellSize;
 end;
 
-function PixelToMap(aValue: SmallInt): SmallInt;
+function GridToPix(aValue: TGridCoord): TPixCoord;
+begin
+  Result := aValue * GridCellSize;
+end;
+
+function PixToMap(aValue: TPixCoord): TMapCoord;
 begin
   Result := aValue div MapCellSize;
+end;
+
+function MapToPix(aValue: TMapCoord): TPixCoord;
+begin
+  Result := aValue * MapCellSize;
 end;
 
 { . 0 .
   1 . 2
   . 3 . }
+
+function GridToMap(aValue: TGridCoord): TMapCoord; register;
+begin
+  Result := aValue shr ShiftMapToGrid;
+end;
+
+function MapToGrid(aValue: TMapCoord): TGridCoord; register;
+begin
+  Result := aValue shl ShiftMapToGrid;
+end;
 
 function DeltaToIndex(dx, dy: TDelta): Byte;
 const
