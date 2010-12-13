@@ -1,7 +1,8 @@
 { Implements game container
 
   @Author  Alexey Yarochkin
-  @Version 11.02.2005 v0.1
+  @Version 07.12.2010 v0.2
+  @History 11.02.2005 v0.1
 }
 
 unit EggerGame;
@@ -12,22 +13,32 @@ uses
   SDL, SDLSprites, SDL_Mixer, EggerSprite, EggerData, IniFiles;
 
 type
+  TSpriteImages = array [TSpriteType] of PSDL_Surface;
+  TSounds = array [TSoundType] of PMix_Chunk;
+  TMap = array [0..MapHeight - 1, 0..MapWidth - 1] of TMapCell;
+  TInfoMap = array [0..MapHeight - 1, MapWidth..MapWidth + MapInfoWidth - 1] of TMapCell;
+
   TGame = class
   private
     Screen,
     Background,
     TileImage,
     FontImage: PSDL_Surface;
-    ox, oy: SmallInt;
-    odx, ody: TDelta;
-    FIniFile: TIniFile;
-    FMap: array [0..MapHeight - 1, 0..MapWidth - 1] of TMapCell;
-    FInfo: array [0..MapHeight - 1, MapWidth..MapWidth + MapInfoWidth - 1] of TMapCell;
-    FStartLevel: string;
-    FLevelDone: TLevelFlags;
-    FLevelTimer: Smallint;
-    FSounds: array [TSoundType] of PMix_Chunk;
-    function GetMap(mx, my: SmallInt): TMapCell;
+    Xorig, Yorig: TPixCoord;
+    dXorig, dYorig: TDelta;
+    fIniFile: TIniFile;
+    fMap: TMap;
+    fInfo: TInfoMap;
+    fStartLevel: string;
+    fLevel: T3DMapCoord;
+    fMapLevelStatus: TMapLevelStatus;
+    fLevelTimer: TLevelTimer;
+    fSounds: TSounds;
+    fGameState: TGameState;
+    fMovePhase: Byte;
+    fSpriteEngine: TSpriteEngine;
+    fSpriteImage: TSpriteImages;
+    function GetMap(aMapX, aMapY: TMapCoord): TMapCell;
     procedure LoadMap(var Map; Length: Word);
     function LoadImage(const Name: string): PSDL_Surface;
     procedure LoadGame;
@@ -39,17 +50,12 @@ type
     procedure OpenDoors(aState: TGameState);
     procedure KillHero;
     procedure NextLevel;
-    function GetLevelDone: Boolean;
-    procedure SetLevelDone(Value: Boolean);
-    procedure SetLevelTimer(Value: SmallInt);
+    function GetLevelStatus: TLevelStatus;
+    procedure SetLevelStatus(aValue: TLevelStatus);
+    procedure SetLevelTimer(Value: TLevelTimer);
     function ParseLevel(const S: string): Boolean;
   public
-    Counter: Byte;
-    GameState: TGameState;
-    SpriteEngine: TSpriteEngine;
-    SpriteImage: array [TSpriteType] of PSDL_Surface;
     Hero: THero;
-    Level: T3DCoord;
 
     constructor Create;
     procedure Initialize;
@@ -57,23 +63,28 @@ type
     procedure Finalize;
 
     procedure DrawBackground;
-    procedure DrawTile(mx, my: SmallInt; Update: Boolean);
+    procedure DrawTile(aMapX, aMapY: TMapCoord; Update: Boolean);
     procedure DrawInfo;
     procedure PlaySound(Sound: TSoundType);
-    procedure WriteText(const Text: string; aX, aY: SmallInt);
+    procedure WriteText(const Text: string; aX, aY: TPixCoord);
 
     function TileCount(Tiles: TTiles; CountWeight: Boolean = False): Word;
-    function SpriteIn(gx1, gx2, gy1, gy2: SmallInt;
+    function SpriteIn(aGridX1, aGridX2, aGridY1, aGridY2: TGridCoord;
       Exclude: TActiveSprite = nil): TActiveSprite;
     procedure ReplaceTiles(STile, DTile: TTileType; Layer: TMapLayer = mlItem;
       Exclude: ShortInt = -1);
     procedure CheckHidden(Unhide: Boolean = False);
 
-    property Map[mx, my: SmallInt]: TMapCell read GetMap;
-    procedure SetMap(mx, my: SmallInt; Layer: TMapLayer; Value: TTileType);
+    property Map[MapX, MapY: TMapCoord]: TMapCell read GetMap;
+    procedure SetMap(aMapX, aMapY: TMapCoord; aLayer: TMapLayer; aValue: TTileType);
     procedure SetNextLevel(dx, dy, dz: TDelta);
-    property LevelDone: Boolean read GetLevelDone write SetLevelDone;
-    property LevelTimer: Smallint read FLevelTimer write SetLevelTimer;
+    property Level: T3DMapCoord read fLevel;
+    property LevelStatus: TLevelStatus read GetLevelStatus write SetLevelStatus;
+    property LevelTimer: TLevelTimer read FLevelTimer write SetLevelTimer;
+    property GameState: TGameState read fGameState write fGameState;
+    property MovePhase: Byte read fMovePhase;
+    property SpriteEngine: TSpriteEngine read fSpriteEngine;
+    property SpriteImage: TSpriteImages read fSpriteImage;
   end;
 
 var
@@ -142,12 +153,12 @@ begin
   TileImage := LoadImage(STilesFile);
   FontImage := LoadImage(SFontFile);
   for st := Low(TSpriteType) to High(TSpriteType) do
-    SpriteImage[st] := LoadImage(SSpriteFile[st]);
+    fSpriteImage[st] := LoadImage(SSpriteFile[st]);
   SDL_ShowCursor(SDL_DISABLE);
 
   // initializing sprite engine
-  SpriteEngine := TSpriteEngine.Create(Screen);
-  SpriteEngine.BackgroundSurface := Background;
+  fSpriteEngine := TSpriteEngine.Create(Screen);
+  fSpriteEngine.BackgroundSurface := Background;
 
   // initializing audio
   if Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT,
@@ -167,7 +178,7 @@ begin
   if not ParseLevel(FStartLevel) then
     FatalError(SIniReadError);
   // creating Hero
-  Hero := THero.Create(sHero, $7, 7 * MapCellSize, 3 * MapCellSize);
+  Hero := THero.Create(sHero, $7, MapToPix(7), MapToPix(3));
 end;
 
 type
@@ -202,8 +213,6 @@ const
   ShortDelay = 10;
 
 procedure TGame.Play;
-const
-  StartingLevel: array [Boolean] of TGameState = (gsPlayLevel, gsCatchKey);
 var
   Ticks, NextTicks: Cardinal;
   Event: TSDL_Event;
@@ -224,7 +233,7 @@ begin
       // - it can be pressed more than once (continuously)
       // - it can be pressed once and the key was not down just before
       if not KeyInfo[i].Once or not Key.Down then
-        if (Key.PrevIndex <> i) or (Counter and $3 = 0) then
+        if (Key.PrevIndex <> i) or (MovePhase and $3 = 0) then
           Key.Index := i;
       Key.Down := True;
       Exit;
@@ -232,6 +241,18 @@ begin
   // if no pressed keys are found isDown flag is reset to false
   Key.Down := False;
   Key.PrevIndex := 0;
+end;
+
+procedure MoveSprites;
+begin
+  if (LevelTimer > 0) and (MovePhase and $1F = 0) then
+  begin
+    LevelTimer := LevelTimer - 1;
+    if LevelTimer = 0 then
+      KillHero;
+  end;
+  SpriteEngine.Move;
+  Inc(fMovePhase);
 end;
 
 procedure ProcessDebugKeys;
@@ -262,7 +283,7 @@ begin
       with Hero do
       begin
         // hero activities are processed when hero is on the grid edge
-        if Counter and $3 = 0 then
+        if MovePhase and $3 = 0 then
         begin
           ProcessDebugKeys;
           case KeyInfo[Key.Index].SDLK of
@@ -293,9 +314,12 @@ begin
     // level starts moving if a key is pressed
     if Key.Down and (GameState = gsStartLevel) then
     begin
-      GameState := StartingLevel[LevelDone or (TileCount([tGold]) = 0)];
+      if (LevelStatus = lsDone) or (TileCount([tHeart]) = 0) then
+        GameState := gsCatchKey
+      else
+        GameState := gsPlayLevel;
       DrawBackground;
-      Counter := 0;
+      fMovePhase := 0;
     end;
 
     case GameState of
@@ -307,17 +331,8 @@ begin
         NextLevel;
       gsKillHero:
         KillHero;
-      else if GameState in MovingStates then
-      begin
-        if (LevelTimer > 0) and (Counter and $1F = 0) then
-        begin
-          LevelTimer := LevelTimer - 1;
-          if LevelTimer = 0 then
-            KillHero;
-        end;
-        SpriteEngine.Move;
-        Inc(Counter);
-      end;
+      gsPlayLevel, gsCatchKey:
+        MoveSprites;
     end;
 
     // updating sprites on the screen
@@ -354,8 +369,8 @@ begin
 
   // images
   for spritetype := Low(TSpriteType) to High(TSpriteType) do
-    if SpriteImage[spritetype] <> nil then
-      SDL_FreeSurface(SpriteImage[spritetype]);
+    if fSpriteImage[spritetype] <> nil then
+      SDL_FreeSurface(fSpriteImage[spritetype]);
   if FontImage <> nil then
     SDL_FreeSurface(FontImage);
   if TileImage <> nil then
@@ -389,53 +404,61 @@ end;
 
 procedure TGame.DrawBackground;
 var
-  mx, my: SmallInt;
+  MapX, MapY: TMapCoord;
 begin
-  for my := 0 to MapHeight - 1 do
-    for mx := 0 to MapWidth + MapInfoWidth - 1 do
-      with FMap[my, mx] do
+  for MapY := 0 to MapHeight - 1 do
+    for MapX := 0 to MapWidth + MapInfoWidth - 1 do
+      with FMap[MapY, MapX] do
       begin
-        if LevelDone and (Item in CollectedItems) then
+        if (LevelStatus = lsDone) and (Item in CollectedItems) then
           Item := tEmpty;
-        DrawTile(mx, my, False);
+        DrawTile(MapX, MapY, False);
       end;
   DrawMap;
   DrawInfo;
 end;
 
-procedure TGame.DrawTile(mx, my: SmallInt; Update: Boolean);
+procedure TGame.DrawTile(aMapX, aMapY: TMapCoord; Update: Boolean);
 var
-  l: TMapLayer;
-  sr, dr: TSDL_Rect;
-  t: TTileType;
+  Layer: TMapLayer;
+  srcRect, destRect: TSDL_Rect;
+  TileType: TTileType;
 begin
-  sr.y := 0;
-  sr.w := MapCellSize;
-  sr.h := MapCellSize;
-  dr.x := mx * MapCellSize;
-  dr.y := my * MapCellSize;
+  srcRect.y := 0;
+  srcRect.w := MapCellSize;
+  srcRect.h := MapCellSize;
+  destRect.x := MapToPix(aMapX);
+  destRect.y := MapToPix(aMapY);
 
-  with Map[mx, my] do
+  with Map[aMapX, aMapY] do
     // drawing from the "back" up to the "item" layer
-    for l := mlBack to mlItem do
+    for Layer := mlBack to mlItem do
     begin
       // getting tile from the coresponding map table
-      t := TTileType(ifop(mx < MapWidth, Ord(z[l]), Ord(FInfo[my, mx].z[l])));
-      if l = mlItem then
+      if aMapX < MapWidth then
+        TileType := Z[Layer]
+      else
+        TileType := FInfo[aMapY, aMapX].Z[Layer];
+      if Layer = mlItem then
         // hidden items are not shown while having some weight
         // or shown as a "diamond"
-        if t in HiddenItems then
-          t := ifop(Weight > 0, tEmpty, tDiamond)
+        if TileType in HiddenItems then
+          if Weight > 0 then
+            TileType := tEmpty
+          else
+            TileType := tDiamond
         // chest items are shown as a "chest"
         // until catching key starts or level is done
-        else if t in ChestItems then
-          t := ifop((GameState in (PersistentStates - [gsCatchKey])) and
-            not LevelDone, tChest, ifop(Hero.InBasket(t), tEmpty, t));
+        else if TileType in ChestItems then
+          if (GameState in (PersistentStates - [gsCatchKey])) and (LevelStatus <> lsDone) then
+            TileType := tChest
+          else if Hero.InBasket(TileType) then
+            TileType := tEmpty;
 
-      sr.x := Ord(t) * MapCellSize;
+      srcRect.x := MapToPix(Ord(TileType));
 
-      if t <> tEmpty then
-        SDL_BlitSurface(TileImage, @sr, Background, @dr);
+      if TileType <> tEmpty then
+        SDL_BlitSurface(TileImage, @srcRect, Background, @destRect);
     end;
 
   if Update then
@@ -444,72 +467,76 @@ end;
 
 procedure TGame.DrawInfo;
 var
-  i: Byte;
-  mx, my: SmallInt;
-  s: string;
+  Index: Byte;
+  MapX, MapY: TMapCoord;
+  S: String;
 begin
   // drawing Hero's basket items
   if Hero <> nil then
   begin
-    for i := 0 to 2 do
-      FInfo[5, MapWidth + 1 + i].Mid := Hero.Basket[i];
+    for Index := low(Hero.Basket) to high(Hero.Basket) do
+      FInfo[5, MapWidth + 1 + Index].Mid := Hero.Basket[Index];
     FInfo[3, MapWidth + 1].Item := ifop(Hero.Bullets > 0, tBullet, tNothing);
   end;
 
-  for my := 1 to 8 do
-    for mx := MapWidth to MapWidth + 4 do
-      DrawTile(mx, my, False);
+  for MapY := 1 to 8 do
+    for MapX := MapWidth to MapWidth + 4 do
+      DrawTile(MapX, MapY, False);
 
-  WriteText('STUFF', (MapWidth + 2) * MapCellSize + GridCellSize, 2 * MapCellSize + 9);
+  WriteText('STUFF', MapToPix(MapWidth + 2) + GridCellSize, MapToPix(2) + 9);
 //  WriteText('HINT', (MapWidth + 1) * MapCellSize + 16, 6 * MapCellSize + 9);
 
   // writing Hero's bullets amount
   if Hero.Bullets > 0 then
   begin
-    Str(Hero.Bullets, s);
-    WriteText(s, (MapWidth + 1) * MapCellSize + GridCellSize, 4 * MapCellSize);
+    Str(Hero.Bullets, S);
+    WriteText(S, MapToPix(MapWidth + 1) + GridCellSize, MaptoPix(4));
   end;
 
   if LevelTimer > 0 then
   begin
-    WriteText('TIME', (MapWidth + 2) * MapCellSize + GridCellSize, 6 * MapCellSize);
-    Str(LevelTimer, s);
-    WriteText(s, (MapWidth + 2) * MapCellSize + GridCellSize, 7 * MapCellSize);
+    WriteText('TIME', MapToPix(MapWidth + 2) + GridCellSize, MapToPix(6));
+    Str(LevelTimer, S);
+    WriteText(S, MapToPix(MapWidth + 2) + GridCellSize, MapToPix(7));
   end;
 
   DrawTile(0, 0, True);
 end;
 
 procedure TGame.DrawMap;
+const
+  CMapR: array [Boolean] of Uint8 = ($7F, $FF);
+  CMapG: array [Boolean] of Uint8 = ($FF, $FF);
+  CMapB: array [Boolean] of Uint8 = ($7F, $7F);
 var
-  x, y: SmallInt;
-  dr: TSDL_Rect;
-  l: Boolean;
+  mapX, mapY: TMapCoord;
+  destRect: TSDL_Rect;
+  isCurrent: Boolean;
 begin
-  dr.w := 8;
-  dr.h := 8;
-  for y := 0 to LevelMapHeight - 1 do
-    for x := 0 to LevelMapWidth - 1 do
+  destRect.w := 8;
+  destRect.h := 8;
+  for mapY := 0 to LevelMapHeight - 1 do
+    for mapX := 0 to LevelMapWidth - 1 do
     begin
-      dr.x := (MapWidth + 1) * MapCellSize + 3 + x * 9;
-      dr.y := 10 * MapCellSize + 3 + 81 - y * 9;
-      l := (x = Level.x) and (y = Level.y);
+      destRect.x := MapToPix(MapWidth + 1) + 3 + mapX * 9;
+      destRect.y := MapToPix(10) + 3 + 81 - mapY * 9;
+      isCurrent := (mapX = Level.mapX) and (mapY = Level.MapY);
       // drawing all passed levels and the current level
-      if FLevelDone[Level.z, y, x] or l then
-        SDL_FillRectAdd(Background, @dr,
-          SDL_MapRGB(Background.format, ifop(l, $ff, $7f), $ff, $7f));
+      if (fMapLevelStatus[Level.mapZ, mapY, mapX] = lsDone) or isCurrent then
+        SDL_FillRectAdd(Background, @destRect, SDL_MapRGB(
+          Background.format, CMapR[isCurrent], CMapG[isCurrent], CMapB[isCurrent]));
   end;
 end;
 
-function TGame.GetMap(mx, my: SmallInt): TMapCell;
+function TGame.GetMap(aMapX, aMapY: TMapCoord): TMapCell;
 begin
-  Result := FMap[my, mx];
+  Result := FMap[aMapY, aMapX];
 end;
 
-procedure TGame.SetMap(mx, my: SmallInt; Layer: TMapLayer; Value: TTileType);
+procedure TGame.SetMap(aMapX, aMapY: TMapCoord; aLayer: TMapLayer; aValue: TTileType);
 begin
-  FMap[my, mx].z[Layer] := Value;
-  DrawTile(mx, my, True);
+  FMap[aMapY, aMapX].Z[aLayer] := aValue;
+  DrawTile(aMapX, aMapY, True);
 end;
 
 function TGame.TileCount(Tiles: TTiles; CountWeight: Boolean = False): Word;
@@ -547,80 +574,80 @@ begin
   DrawTile(0, 0, True);
 end;
 
-function TGame.SpriteIn(gx1, gx2, gy1, gy2: SmallInt;
+function TGame.SpriteIn(aGridX1, aGridX2, aGridY1, aGridY2: TGridCoord;
   Exclude: TActiveSprite = nil): TActiveSprite;
 var
-  i: Word;
+  Index: Word;
 begin
-  for i := 0 to SpriteEngine.Sprites.Count - 1 do
+  for Index := 0 to SpriteEngine.Sprites.Count - 1 do
   begin
-    Result := TActiveSprite(SpriteEngine.Sprites[i]);
+    Result := TActiveSprite(SpriteEngine.Sprites[Index]);
     { TODO : optimize intersection check }
     if ((Exclude = nil) or (Result <> Exclude) {and (Result <> Hero)}) and
       (Result.State <> ssRecovering) and not (Result.SpriteType in Ammunition) and
       RectsIntersect(
-        PixelToGrid(Result.x), PixelToGrid(Result.x + GridCellSize),
-        PixelToGrid(Result.y), PixelToGrid(Result.y + GridCellSize),
-        gx1, gx2, gy1, gy2) then Exit;
+        PixToGrid(Result.X), PixToGrid(Result.X + GridCellSize),
+        PixToGrid(Result.Y), PixToGrid(Result.Y + GridCellSize),
+        aGridX1, aGridX2, aGridY1, aGridY2) then Exit;
   end;
   Result := nil;
 end;
 
 procedure TGame.CreateSprites;
 var
-  x, y, mx, my: SmallInt;
-  dx, dy: TDelta;
-  st: TSpriteType;
-  h: Boolean;
+  X, Y: TPixCoord;
+  MapX, MapY: TMapCoord;
+  dX, dY: TDelta;
+  SpriteType: TSpriteType;
+  LevelHint: Boolean;
 begin
-  for my := 0 to MapHeight - 1 do
-    for mx := 0 to MapWidth - 1 do
-      with Map[mx, my] do
+  for MapY := 0 to MapHeight - 1 do
+    for MapX := 0 to MapWidth - 1 do
+      with Map[MapX, MapY] do
         // sprite can stand on an empty item only
-        if (Item in SpriteHolders) and
-          (Sprite and $8 = 0) then
+        if (Item in SpriteHolders) and (Sprite and $8 = 0) then
         begin
           // screen coordinates
-          x := mx * MapCellSize;
-          y := my * MapCellSize;
+          X := MapToPix(MapX);
+          Y := MapToPix(MapY);
           // initial turn
-          dx := ItoDX[Sprite and $3];
-          dy := ItoDY[Sprite and $3];
+          dX := ItoDX[Sprite and $3];
+          dY := ItoDY[Sprite and $3];
           if Sprite and $F0 = $F0 then
-            Hero.Reset(x, y, dx, dy)
+            Hero.Reset(X, Y, dX, dY)
           else
           begin
             // sprite type
-            st := TSpriteType(Sprite shr 4);
+            SpriteType := TSpriteType(Sprite shr 4);
             // flag whether sprite is a level hint
-            h := Boolean(Sprite and $4);
-            if  st = sBox then
-              TBox.Create(sBox, $FF, x, y, 0, 0, h)
+            LevelHint := Boolean(Sprite and $4);
+            if SpriteType = sBox then
+              TBox.Create(sBox, $FF, X, Y, 0, 0, LevelHint)
             else
             // enemy sprite can be created only if level is not done yet
-            if not LevelDone then
-              case st of
+            if LevelStatus <> lsDone then
+              case SpriteType of
                 sDragon:
-                  TDragon.Create(sDragon, 0, x, y, 0, 0, h);
+                  TDragon.Create(sDragon, 0, X, Y, 0, 0, LevelHint);
                 sSkull:
-                  TSkull.Create(sSkull, $FF, x, y, dx, dy, h);
+                  TSkull.Create(sSkull, $FF, X, Y, dX, dY, LevelHint);
                 sRoller:
-                  TRoller.Create(sRoller, 3, x, y, dx, dy, h);
+                  TRoller.Create(sRoller, 3, X, Y, dX, dY, LevelHint);
                 sFireBall:
-                  TFireball.Create(sFireball, 0, x, y, dx, dy, h);
+                  TFireball.Create(sFireball, 0, X, Y, dX, dY, LevelHint);
                 sSleepy:
-                  TSleepy.Create(x, y, dx, dy, h);
+                  TSleepy.Create(X, Y, dX, dY, LevelHint);
                 sMedusa:
-                  TMedusa.Create(sMedusa, $FF, x, y, 0, 0);
+                  TMedusa.Create(sMedusa, $FF, X, Y, 0, 0);
                 sStony:
-                  TStony.Create(sStony, 3, x, y, dx, dy, h);
+                  TStony.Create(sStony, 3, X, Y, dX, dY, LevelHint);
                 sCuckold:
-                  TCuckold.Create(sCuckold, $FF, x, y, dx, dy, h);
+                  TCuckold.Create(sCuckold, $FF, X, Y, dX, dY, LevelHint);
               end
-            else if h then
-              case st of
+            else if LevelHint then
+              case SpriteType of
                 sSleepy:
-                  if dx = 0 then
+                  if dX = 0 then
                     TSleepy.DoHint;
                 sFireball:
                   TFireball.DoHint;
@@ -650,71 +677,71 @@ end;
 
 procedure TGame.OpenDoors(aState: TGameState);
 begin
-  ReplaceTiles(tDoorT, tDoorTO);
-  ReplaceTiles(tDoorL, tDoorLO);
-  ReplaceTiles(tDoorR, tDoorRO);
-  ReplaceTiles(tDoorB, tDoorBO);
-  ReplaceTiles(tDoorD, tDoorDO);
-  ReplaceTiles(tDoorU, tDoorUO);
+  ReplaceTiles(tDoorTop, tDoorOpenTop);
+  ReplaceTiles(tDoorLeft, tDoorOpenLeft);
+  ReplaceTiles(tDoorRight, tDoorOpenRight);
+  ReplaceTiles(tDoorBottom, tDoorOpenBottom);
+  ReplaceTiles(tDoorDown, tDoorOpenDown);
+  ReplaceTiles(tDoorUp, tDoorOpenUp);
   // delete all enemy sprites in the level
   DeleteSprites(False);
   // mark level as done
-  LevelDone := True;
+  LevelStatus := lsDone;
   GameState := aState;
 end;
 
 procedure TGame.SetNextLevel(dx, dy, dz: TDelta);
 begin
   // calculate the next level number
-  Inc(Level.x, dx);
-  Inc(Level.y, -dy);
-  Inc(Level.z, dz);
+  Inc(Level.mapX, dx);
+  Inc(Level.mapY, -dy);
+  Inc(Level.mapZ, dz);
 end;
 
 procedure TGame.NextLevel;
 var
-  i: Word;
-  mx, my: SmallInt;
+  Count: Word;
+  MapX, MapY: TMapCoord;
 begin
   // delete all remaining sprites in the level
   GameState := gsNextLevel;
   DeleteSprites(True);
   // form the new level
   LoadMap(FMap, SizeOf(FMap));
-  i := TileCount([tDoorD]);
-  if i > 1 then
-    ReplaceTiles(tDoorD, tEmpty, mlItem, Random(i));
+  Count := TileCount([tDoorDown]);
+  if Count > 1 then
+    ReplaceTiles(tDoorDown, tEmpty, mlItem, Random(Count));
   LevelTimer := TileCount([tMasterKey], True);
   GameState := gsStartLevel;
   DrawBackground;
   if TileCount(ChestItems) = 0 then
-    LevelDone := True;
-  if LevelDone then
+    LevelStatus := lsDone;
+  if LevelStatus = lsDone then
     OpenDoors(gsStartLevel);
   // adjust the hero position
   with Hero do
   begin
-    oX := x;
-    oY := y;
-    odX := dX;
-    odY := dY;
+    Xorig := X;
+    Yorig := Y;
+    dXorig := dX;
+    dYorig := dY;
 
     Reset(
-      ifop(dX <> 0, (MapWidth - 1 - PixelToMap(x)) * MapCellSize, x),
-      ifop(dY <> 0, (MapHeight - 1 - PixelToMap(y)) * MapCellSize, y), dX, dY);
+      ifop(dX <> 0, MapToPix(MapWidth - 1 - PixToMap(X)), X),
+      ifop(dY <> 0, MapToPix(MapHeight - 1 - PixToMap(Y)), Y), dX, dY);
 
-    mx := PixelToMap(x);
-    my := PixelToMap(y);
-    with Map[mx, my] do
+    MapX := PixToMap(X);
+    MapY := PixToMap(Y);
+    with Map[MapX, MapY] do
     begin
       // if Hero appears on the ground
       // - drawing an open door
       if Back in [tNothing, tEmpty] then
       begin
-        SetMap(mx, my, mlItem, TTileType(Ord(tDoorTO) + DeltaToIndex(-dX, -dY)));
+        SetMap(MapX, MapY, mlItem, TTileType(Ord(tDoorOpenTop) + DeltaToIndex(-dX, -dY)));
         // make one more grid cell step
-        Inc(x, GridCellSize * dX);
-        Inc(y, GridCellSize * dY);
+        Inc(X, GridToPix(dX));
+        Inc(Y, GridToPix(dY));
       end
       // if Hero appears on the water
       // - recreating a swimming raft for Hero
@@ -723,10 +750,10 @@ begin
         if Item <> tEmpty then
         begin
           // make one more map cell step
-          Inc(x, MapCellSize * dX);
-          Inc(y, MapCellSize * dY);
+          Inc(X, MapToPix(dX));
+          Inc(Y, MapToPix(dY));
         end;
-        Sail := TShip.Create(Hero, x, y);
+        Sail := TShip.Create(Hero, X, Y);
       end;
     end;
   end;
@@ -736,7 +763,7 @@ end;
 procedure TGame.KillHero;
 begin
   PlaySound(sndKill);
-  Hero.Reset(ox, oy, odx, ody);
+  Hero.Reset(Xorig, Yorig, dXorig, dYorig);
   SetNextLevel(0, 0, 0);
   NextLevel;
 end;
@@ -766,19 +793,19 @@ begin
         end;
 end;
 
-procedure TGame.WriteText(const Text: string; aX, aY: SmallInt);
+procedure TGame.WriteText(const Text: string; aX, aY: TPixCoord);
 var
-  i: Word;
+  Index: Word;
   srcRect, destRect: TSDL_Rect;
 begin
   srcRect.y := 0;
   srcRect.w := 14;
   srcRect.h := 16;
   destRect.y := aY;
-  for i := 1 to Length(Text) do
+  for Index := 1 to Length(Text) do
   begin
-    srcRect.x := (Ord(Text[i]) - Ord(' ')) * 16 + 1;
-    destRect.x := aX - Length(Text) * 14 div 2 + (i - 1) * 14;
+    srcRect.x := (Ord(Text[Index]) - Ord(' ')) * 16 + 1;
+    destRect.x := aX - Length(Text) * 14 div 2 + (Index - 1) * 14;
     SDL_BlitSurface(FontImage, @srcRect, Background, @destRect);
   end;
 end;
@@ -787,14 +814,14 @@ procedure TGame.LoadMap(var Map; Length: Word);
 var
   f: File;
 
-function GetOffset: Longint;
+function GetOffset: Int64;
 var
   s: string;
   c: Longint;
 begin
   Result := FileSize(f);
-  Str(Level.x * 100 + Level.y + 10101, s);
-  s[1] := Chr(Ord(FStartLevel[1]) + Level.z);
+  Str(Level.mapX * 100 + Level.mapY + 10101, s);
+  s[1] := Chr(Ord(FStartLevel[1]) + Level.mapZ);
   s := FIniFile.ReadString(SGenSection, s, '');
   if s = '' then Exit;
 
@@ -826,71 +853,71 @@ end;
 
 procedure TGame.LoadGame;
 var
-  f: File of TGameRecord;
-  r: TGameRecord;
+  GameFile: File of TGameRecord;
+  Rec: TGameRecord;
 begin
-  AssignFile(f, SGameStateFile);
-  Reset(f);
+  AssignFile(GameFile, SGameStateFile);
+  Reset(GameFile);
   try
-    Read(f, r);
-    FLevelDone := r.LevelDone;
-    Level := r.Level;
-    ox := r.x;
-    oy := r.y;
-    odx := r.dx;
-    ody := r.dy;
+    Read(GameFile, Rec);
+    fMapLevelStatus := Rec.MapLevelStatus;
+    fLevel := Rec.Level;
+    Xorig := Rec.x;
+    Yorig := Rec.y;
+    dXorig := Rec.dx;
+    dYorig := Rec.dy;
     GameState := gsKillHero;
   finally
-    CloseFile(f);
+    CloseFile(GameFile);
   end;
 end;
 
 procedure TGame.SaveGame;
 var
-  f: File of TGameRecord;
-  r: TGameRecord;
+  GameFile: File of TGameRecord;
+  Rec: TGameRecord;
 begin
-  AssignFile(f, SGameStateFile);
-  Rewrite(f);
+  AssignFile(GameFile, SGameStateFile);
+  Rewrite(GameFile);
   try
-    r.LevelDone := FLevelDone;
-    r.Level := Level;
-    r.x := ox;
-    r.y := oy;
-    r.dx := odx;
-    r.dy := ody;
-    Write(f, r);
+    Rec.MapLevelStatus := fMapLevelStatus;
+    Rec.Level := Level;
+    Rec.X := Xorig;
+    Rec.Y := Yorig;
+    Rec.dX := dXorig;
+    Rec.dY := dYorig;
+    Write(GameFile, Rec);
   finally
-    CloseFile(f);
+    CloseFile(GameFile);
   end;
 end;
 
-function TGame.GetLevelDone: Boolean;
+function TGame.GetLevelStatus: TLevelStatus;
 begin
-  Result := FLevelDone[Level.z, Level.y, Level.x];
+  Result := fMapLevelStatus[Level.mapZ, Level.mapY, Level.mapX];
 end;
 
-procedure TGame.SetLevelDone(Value: Boolean);
+procedure TGame.SetLevelStatus(aValue: TLevelStatus);
 begin
-  FLevelDone[Level.z, Level.y, Level.x] := Value;
+  fMapLevelStatus[Level.mapZ, Level.mapY, Level.mapX] := aValue;
 end;
 
 function TGame.ParseLevel(const S: string): Boolean;
 var
-  c: Longint;
+  Code: Longint;
+  mapX, mapY: TMapCoord;
 begin
-  Result := False;
-  Val(s[2] + s[3], Level.x, c);
-  if c <> 0 then Exit;
-  Val(s[4] + S[5], Level.y, c);
-  if c <> 0 then Exit;
-  Dec(Level.x);
-  Dec(Level.y);
-  Level.z := Ord(s[1]) - Ord(FStartLevel[1]);
+  Val(S[2] + S[3], mapX, Code);
+  if Code <> 0 then Exit(False);
+  Val(S[4] + S[5], mapY, Code);
+  if Code <> 0 then Exit(False);
+  fLevel.mapX := mapX - 1;
+  fLevel.mapY := mapY - 1;
+  fLevel.mapZ := Ord(s[1]) - Ord(FStartLevel[1]);
   Result := True;
 end;
 
-procedure TGame.SetLevelTimer(Value: Smallint);
+procedure TGame.SetLevelTimer(Value: TLevelTimer);
 begin
   FLevelTimer := Value;
   DrawInfo;
