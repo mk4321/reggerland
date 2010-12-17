@@ -5,9 +5,16 @@
     <PathDelim Value="\"/>
     <General>
       <Flags>
+        <MainUnitHasUsesSectionForAllUnits Value="False"/>
+        <MainUnitHasCreateFormStatements Value="False"/>
+        <MainUnitHasTitleStatement Value="False"/>
         <LRSInOutputDirectory Value="False"/>
       </Flags>
       <MainUnit Value="0"/>
+      <Title Value="REggerland"/>
+      <UseAppBundle Value="False"/>
+      <UseXPManifest Value="True"/>
+      <Icon Value="0"/>
       <ActiveWindowIndexAtStart Value="0"/>
     </General>
     <VersionInfo>
@@ -32,15 +39,15 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="14">
+    <Units Count="15">
       <Unit0>
         <Filename Value="reggerland.lpr"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
-        <CursorPos X="13" Y="13"/>
-        <UsageCount Value="46"/>
+        <CursorPos X="15" Y="15"/>
+        <UsageCount Value="66"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit0>
@@ -48,23 +55,23 @@
         <Filename Value="eggergame.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="EggerGame"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="181"/>
-        <CursorPos X="18" Y="209"/>
-        <UsageCount Value="46"/>
+        <TopLine Value="632"/>
+        <CursorPos X="41" Y="661"/>
+        <UsageCount Value="66"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit1>
       <Unit2>
         <Filename Value="eggersprite.pas"/>
         <UnitName Value="EggerSprite"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="936"/>
-        <CursorPos X="53" Y="946"/>
-        <UsageCount Value="24"/>
+        <TopLine Value="1088"/>
+        <CursorPos X="3" Y="1110"/>
+        <UsageCount Value="34"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit2>
@@ -73,7 +80,7 @@
         <UnitName Value="sdlsprites"/>
         <TopLine Value="16"/>
         <CursorPos X="2" Y="37"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="5"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
@@ -82,7 +89,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="16"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="5"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit4>
       <Unit5>
@@ -91,7 +98,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="77"/>
         <CursorPos X="4" Y="80"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="5"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit5>
       <Unit6>
@@ -100,7 +107,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="24"/>
         <CursorPos X="1" Y="31"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="5"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit6>
       <Unit7>
@@ -109,17 +116,17 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="1"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="5"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit7>
       <Unit8>
         <Filename Value="eggerdata.pas"/>
         <UnitName Value="EggerData"/>
-        <EditorIndex Value="6"/>
+        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="128"/>
-        <CursorPos X="3" Y="144"/>
-        <UsageCount Value="23"/>
+        <TopLine Value="109"/>
+        <CursorPos X="9" Y="125"/>
+        <UsageCount Value="33"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit8>
@@ -129,167 +136,174 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="1"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="5"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\..\..\Lib\JEDI-SDLv1.0\SDLSpriteEngine\Pas\sdlsprites.pas"/>
         <UnitName Value="sdlsprites"/>
+        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="21"/>
-        <CursorPos X="14" Y="27"/>
-        <UsageCount Value="7"/>
+        <TopLine Value="191"/>
+        <CursorPos X="1" Y="208"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit10>
       <Unit11>
         <Filename Value="..\..\..\Lib\JEDI-SDLv1.0\SDL\Pas\sdl.pas"/>
         <UnitName Value="sdl"/>
-        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="3045"/>
         <CursorPos X="11" Y="3061"/>
-        <UsageCount Value="13"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="12"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\..\..\..\t305633\Lazarus.0.9.29\fpc\2.4.3\source\rtl\inc\objpash.inc"/>
-        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="178"/>
         <CursorPos X="21" Y="194"/>
-        <UsageCount Value="13"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="12"/>
       </Unit12>
       <Unit13>
         <Filename Value="..\..\..\..\..\t305633\Lazarus.0.9.29\fpc\2.4.3\source\rtl\inc\objpas.inc"/>
-        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="160"/>
         <CursorPos X="12" Y="163"/>
-        <UsageCount Value="13"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="12"/>
       </Unit13>
+      <Unit14>
+        <Filename Value="..\..\..\Lib\JEDI-SDLv1.0\SDL\Pas\logger.pas"/>
+        <UnitName Value="logger"/>
+        <EditorIndex Value="3"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="65"/>
+        <CursorPos X="3" Y="79"/>
+        <UsageCount Value="15"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit14>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="EggerData.pas"/>
-        <Caret Line="200" Column="1" TopLine="174"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="279" Column="14" TopLine="256"/>
       </Position1>
       <Position2>
-        <Filename Value="EggerData.pas"/>
-        <Caret Line="188" Column="28" TopLine="185"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="12" Column="1" TopLine="1"/>
       </Position2>
       <Position3>
-        <Filename Value="EggerData.pas"/>
-        <Caret Line="189" Column="27" TopLine="172"/>
+        <Filename Value="eggerdata.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position3>
       <Position4>
-        <Filename Value="EggerData.pas"/>
-        <Caret Line="225" Column="26" TopLine="220"/>
+        <Filename Value="eggerdata.pas"/>
+        <Caret Line="124" Column="9" TopLine="93"/>
       </Position4>
       <Position5>
-        <Filename Value="EggerData.pas"/>
-        <Caret Line="194" Column="20" TopLine="173"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="1222" Column="1" TopLine="1206"/>
       </Position5>
       <Position6>
-        <Filename Value="EggerData.pas"/>
-        <Caret Line="191" Column="15" TopLine="178"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position6>
       <Position7>
-        <Filename Value="EggerData.pas"/>
-        <Caret Line="249" Column="1" TopLine="220"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="615" Column="34" TopLine="605"/>
       </Position7>
       <Position8>
-        <Filename Value="EggerData.pas"/>
-        <Caret Line="53" Column="14" TopLine="32"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="619" Column="35" TopLine="605"/>
       </Position8>
       <Position9>
-        <Filename Value="EggerSprite.pas"/>
-        <Caret Line="1458" Column="27" TopLine="1442"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="83" Column="60" TopLine="67"/>
       </Position9>
       <Position10>
-        <Filename Value="EggerSprite.pas"/>
-        <Caret Line="450" Column="43" TopLine="434"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="685" Column="50" TopLine="667"/>
       </Position10>
       <Position11>
-        <Filename Value="EggerSprite.pas"/>
-        <Caret Line="487" Column="54" TopLine="471"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="443" Column="12" TopLine="411"/>
       </Position11>
       <Position12>
-        <Filename Value="EggerSprite.pas"/>
-        <Caret Line="596" Column="25" TopLine="580"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position12>
       <Position13>
-        <Filename Value="EggerSprite.pas"/>
-        <Caret Line="933" Column="46" TopLine="917"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="83" Column="18" TopLine="67"/>
       </Position13>
       <Position14>
-        <Filename Value="EggerSprite.pas"/>
-        <Caret Line="944" Column="45" TopLine="928"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="84" Column="21" TopLine="67"/>
       </Position14>
       <Position15>
-        <Filename Value="EggerGame.pas"/>
-        <Caret Line="11" Column="22" TopLine="1"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="443" Column="17" TopLine="427"/>
       </Position15>
       <Position16>
-        <Filename Value="EggerGame.pas"/>
-        <Caret Line="572" Column="11" TopLine="555"/>
+        <Filename Value="eggergame.pas"/>
+        <Caret Line="465" Column="12" TopLine="449"/>
       </Position16>
       <Position17>
         <Filename Value="eggergame.pas"/>
-        <Caret Line="671" Column="6" TopLine="648"/>
+        <Caret Line="565" Column="41" TopLine="536"/>
       </Position17>
       <Position18>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="876" Column="33" TopLine="856"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="1222" Column="1" TopLine="1206"/>
       </Position18>
       <Position19>
-        <Filename Value="reggerland.lpr"/>
-        <Caret Line="3" Column="1" TopLine="1"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="635" Column="1" TopLine="619"/>
       </Position19>
       <Position20>
-        <Filename Value="reggerland.lpr"/>
-        <Caret Line="13" Column="13" TopLine="1"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="638" Column="1" TopLine="619"/>
       </Position20>
       <Position21>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="258" Column="17" TopLine="240"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="755" Column="1" TopLine="739"/>
       </Position21>
       <Position22>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="286" Column="31" TopLine="258"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="756" Column="1" TopLine="739"/>
       </Position22>
       <Position23>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="345" Column="15" TopLine="316"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="758" Column="1" TopLine="739"/>
       </Position23>
       <Position24>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="362" Column="6" TopLine="332"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="657" Column="1" TopLine="641"/>
       </Position24>
       <Position25>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="288" Column="10" TopLine="257"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="665" Column="1" TopLine="641"/>
       </Position25>
       <Position26>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="302" Column="41" TopLine="270"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="657" Column="1" TopLine="641"/>
       </Position26>
       <Position27>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="52" Column="19" TopLine="31"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="665" Column="1" TopLine="641"/>
       </Position27>
       <Position28>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="248" Column="8" TopLine="233"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="657" Column="21" TopLine="641"/>
       </Position28>
       <Position29>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="230" Column="9" TopLine="198"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="655" Column="43" TopLine="638"/>
       </Position29>
       <Position30>
-        <Filename Value="eggergame.pas"/>
-        <Caret Line="210" Column="18" TopLine="186"/>
+        <Filename Value="eggersprite.pas"/>
+        <Caret Line="1222" Column="1" TopLine="1206"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>
@@ -315,10 +329,16 @@
     </Parsing>
     <Linking>
       <Debugging>
+        <GenerateDebugInfo Value="True"/>
         <UseLineInfoUnit Value="False"/>
         <StripSymbols Value="True"/>
       </Debugging>
       <LinkSmart Value="True"/>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
     </Linking>
     <Other>
       <CompilerMessages>
@@ -328,4 +348,11 @@
       <CompilerPath Value="$(CompPath)"/>
     </Other>
   </CompilerOptions>
+  <Debugging>
+    <Watches Count="1">
+      <Item1>
+        <Expression Value="fLevel"/>
+      </Item1>
+    </Watches>
+  </Debugging>
 </CONFIG>

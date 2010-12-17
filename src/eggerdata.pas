@@ -96,6 +96,9 @@ type
 const
   PersistentStates = [gsStartLevel, gsPlayLevel, gsCatchKey];
   MovingStates = [gsPlayLevel, gsCatchKey];
+  GameStateNames: array[TGameState] of String = (
+    'StartLevel', 'PlayLevel', 'OpenChest', 'CatchKey',
+    'OpenDoors', 'NextLevel', 'KillHero', 'Quit');
 
 type
   TSpriteState = (ssNormal, ssPaused, ssRecovering, ssSwimming, ssSleeping);
@@ -168,17 +171,15 @@ type
     dX, dY: TDelta;
   end;
 
+const
+  LevelStatusNames: array[TLevelStatus] of String = ('NEW', 'DONE');
+
 resourcestring
   SAppTitle = 'Egger';
-  SInit = 'INIT';
-  SFinal = 'FINI';
   SSDLInitError = 'SDL initialization failed';
   SAudioInitError = 'SDL mixer initialization failed';
-  SSoundLoadError = 'Error loading sound: ';
   SBackgroundError = 'Creating background failed';
   SVideoModeError = 'Setting video mode failed';
-  SVideoMode = 'Selected video mode: ';
-  SImageError = 'Error loading image: ';
   SMapOpenError = 'Map file not found';
   SMapReadError = 'Error reading map file';
   SIniReadError = 'Error reading ini file';
@@ -208,7 +209,9 @@ function PixToMap(aValue: TPixCoord): TMapCoord; register;
 function MapToPix(aValue: TMapCoord): TPixCoord; register;
 function GridToMap(aValue: TGridCoord): TMapCoord; register;
 function MapToGrid(aValue: TMapCoord): TGridCoord; register;
-function DeltaToIndex(dX, dY: TDelta): Byte; register;
+function DeltaToIndex(adX, adY: TDelta): Byte; register;
+function OffsetTileType(aTileType: TTileType; adX, adY: TDelta;
+  aReverse: Boolean = False): TTileType;
 function ifop(aCondition: Boolean; aTrueResult, aFalseResult: SmallInt): SmallInt; register; overload;
 function ifop(aCondition: Boolean; aTrueResult, aFalseResult: TTileType): TTileType; register; overload;
 function ifop(aCondition: Boolean; aTrueResult, aFalseResult: TSpriteState): TSpriteState; register; overload;
@@ -258,12 +261,23 @@ begin
   Result := aValue shl ShiftMapToGrid;
 end;
 
-function DeltaToIndex(dx, dy: TDelta): Byte;
+function DeltaToIndex(adx, ady: TDelta): Byte;
 const
   cdX: array[TDelta] of Byte = (1, 0, 2);
   cdY: array[TDelta] of Byte = (0, 0, 3);
 begin
-  Result := cdX[dX] + cdY[dY];
+  Result := cdX[adX] + cdY[adY];
+end;
+
+function OffsetTileType(aTileType: TTileType; adX, adY: TDelta;
+  aReverse: Boolean): TTileType;
+var
+  Index: Byte;
+begin
+  Index := DeltaToIndex(adX, adY);
+  if aReverse then
+    Index := -Index;
+  Result := TTileType(Ord(aTileType) + Index);
 end;
 
 function ifop(aCondition: Boolean; aTrueResult, aFalseResult: SmallInt): SmallInt;
