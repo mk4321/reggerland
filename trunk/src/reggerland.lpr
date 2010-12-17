@@ -1,10 +1,11 @@
 program Egger;
+{$mode objfpc}{$H+}
+{ $apptype console}
 
-{ TODO : Hero should sail }
-{ TODO : Stony should push }
-{ TODO : Make raft swim }
 uses
   EggerGame in 'EggerGame.pas';
+
+{$R *.res}
 
 begin
   Game := TGame.Create;
